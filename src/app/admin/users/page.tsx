@@ -2,21 +2,12 @@
 
 import { useConvexAuth, usePaginatedQuery } from 'convex/react'
 import { format } from 'date-fns'
-import { Users, Shield } from 'lucide-react'
+import { Users } from 'lucide-react'
 import Link from 'next/link'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
-
-const ADMIN_EMAILS = (process.env.NEXT_PUBLIC_ADMIN_EMAILS || '')
-	.split(',')
-	.map((e) => e.trim().toLowerCase())
-	.filter(Boolean)
-
-function isAdminEmail(email: string) {
-	return ADMIN_EMAILS.includes(email.toLowerCase())
-}
 
 function initials(name?: string | null) {
 	if (!name) return '?'
@@ -65,9 +56,7 @@ export default function UsersPage() {
 				</div>
 			) : (
 				<div className="divide-y rounded-xl border">
-					{results.map((user) => {
-						const admin = isAdminEmail(user.email)
-						return (
+					{results.map((user) => (
 							<div
 								key={user._id}
 								className="hover:bg-muted/30 flex items-center gap-4 px-4 py-3 transition-colors"
@@ -84,14 +73,11 @@ export default function UsersPage() {
 										<span className="truncate font-medium">
 											{user.name ?? 'Unnamed'}
 										</span>
-										{admin && (
-											<Shield className="h-3 w-3 shrink-0 text-blue-500" />
+										{user.fundApplicationLimitExempt && (
+											<Badge variant="outline" className="text-xs text-blue-600">
+												Exempt
+											</Badge>
 										)}
-								{user.fundApplicationLimitExempt && (
-										<Badge variant="outline" className="text-xs text-blue-600">
-											Exempt
-										</Badge>
-									)}
 									</div>
 									<p className="text-muted-foreground truncate text-sm">
 										{user.email}
@@ -108,8 +94,7 @@ export default function UsersPage() {
 									</Button>
 								</Link>
 							</div>
-						)
-					})}
+						))}
 				</div>
 			)}
 

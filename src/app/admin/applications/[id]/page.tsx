@@ -42,7 +42,7 @@ export default function ApplicationDetailPage({
 	const deny = useMutation(api.applications.deny)
 	const updateNotes = useMutation(api.applications.updateNotes)
 
-	const [notes, setNotes] = useState('')
+	const [notes, setNotes] = useState<string | null>(null)
 	const [loading, setLoading] = useState<'approve' | 'deny' | 'notes' | null>(
 		null,
 	)
@@ -80,9 +80,10 @@ export default function ApplicationDetailPage({
 		}
 		setLoading('approve')
 		try {
-			await approve({ id: app._id, adminNotes: notes || undefined })
+			const notesValue = notes ?? app.adminNotes
+			await approve({ id: app._id, adminNotes: notesValue || undefined })
 			toast.success('Application approved')
-			setNotes('')
+			setNotes(null)
 		} catch {
 			toast.error('Failed to approve')
 		} finally {
@@ -98,9 +99,10 @@ export default function ApplicationDetailPage({
 		}
 		setLoading('deny')
 		try {
-			await deny({ id: app._id, adminNotes: notes || undefined })
+			const notesValue = notes ?? app.adminNotes
+			await deny({ id: app._id, adminNotes: notesValue || undefined })
 			toast.success('Application denied')
-			setNotes('')
+			setNotes(null)
 		} catch {
 			toast.error('Failed to deny')
 		} finally {
@@ -116,7 +118,7 @@ export default function ApplicationDetailPage({
 		}
 		setLoading('notes')
 		try {
-			await updateNotes({ id: app._id, adminNotes: notes })
+			await updateNotes({ id: app._id, adminNotes: notes ?? '' })
 			toast.success('Notes saved')
 		} catch {
 			toast.error('Failed to save notes')
@@ -364,7 +366,7 @@ export default function ApplicationDetailPage({
 						<CardContent className="space-y-2">
 							<Textarea
 								placeholder="Add notes about this application..."
-								value={notes || app.adminNotes || ''}
+								value={notes ?? app.adminNotes ?? ''}
 								onChange={(e) => setNotes(e.target.value)}
 								rows={4}
 								className="text-sm"

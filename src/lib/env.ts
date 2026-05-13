@@ -10,7 +10,6 @@ const envSchema = z.object({
 		.string()
 		.min(1, 'Clerk publishable key is required'),
 	CLERK_SECRET_KEY: z.string().min(1, 'Clerk secret key is required'),
-	CLERK_WEBHOOK_SECRET: z.string().optional(),
 	NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/?auth=sign-in'),
 	NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/?auth=sign-up'),
 	NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: z.string().optional(),
@@ -37,7 +36,7 @@ const envSchema = z.object({
 	SANITY_API_TOKEN: z.string().optional(),
 
 	// Email — transactional confirmations only
-	RESEND_API_KEY: z.string().min(1, 'Resend API key is required'),
+	RESEND_API_KEY: z.string().optional(),
 
 	// Admin
 	ADMIN_EMAILS: z.string().optional(),

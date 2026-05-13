@@ -16,6 +16,28 @@ function definedFields<T extends Record<string, unknown>>(fields: T): Partial<T>
 
 // ─── Queries ────────────────────────────────────────────────────────────────
 
+/** Admin: paginated list of all applications regardless of status. */
+export const listAll = query({
+	args: { paginationOpts: paginationOptsValidator },
+	handler: async (ctx, { paginationOpts }) => {
+		await requireAdminReader(ctx)
+
+		const page = await ctx.db
+			.query('fundApplications')
+			.order('desc')
+			.paginate(paginationOpts)
+
+		const items = await Promise.all(
+			page.page.map(async (app) => {
+				const user = await ctx.db.get(app.userId)
+				return { ...app, user }
+			}),
+		)
+
+		return { ...page, page: items }
+	},
+})
+
 /** Admin: paginated list filtered by status. */
 export const listByStatus = query({
 	args: {

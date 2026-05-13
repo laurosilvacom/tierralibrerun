@@ -6,10 +6,13 @@ type AuthContext = {
 	}
 }
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? '')
+const ADMIN_ENTRIES = (process.env.ADMIN_EMAILS ?? '')
 	.split(',')
 	.map((value) => value.trim().toLowerCase())
 	.filter(Boolean)
+
+const ADMIN_EMAILS = ADMIN_ENTRIES.filter((e) => !e.startsWith('@'))
+const ADMIN_DOMAINS = ADMIN_ENTRIES.filter((e) => e.startsWith('@')).map((d) => d.slice(1))
 
 export async function requireIdentity(ctx: AuthContext) {
 	const identity = await ctx.auth.getUserIdentity()
@@ -31,7 +34,9 @@ export function isAdminReader(identity: UserIdentity) {
 	const email = identityEmail(identity)
 	const role = identityRole(identity)
 	return (
-		(email ? ADMIN_EMAILS.includes(email) : false) ||
+		(email
+			? ADMIN_EMAILS.includes(email) || ADMIN_DOMAINS.some((d) => email.endsWith(`@${d}`))
+			: false) ||
 		role === 'admin' ||
 		role === 'admin_readonly'
 	)
@@ -40,7 +45,9 @@ export function isAdminReader(identity: UserIdentity) {
 export function isAdminWriter(identity: UserIdentity) {
 	const email = identityEmail(identity)
 	const role = identityRole(identity)
-	return (email ? ADMIN_EMAILS.includes(email) : false) || role === 'admin'
+	return (email
+		? ADMIN_EMAILS.includes(email) || ADMIN_DOMAINS.some((d) => email.endsWith(`@${d}`))
+		: false) || role === 'admin'
 }
 
 export async function requireAdminReader(ctx: AuthContext) {

@@ -12,13 +12,18 @@ import { normalizeInternalPath } from '@/lib/routing'
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
-const ADMIN_EMAILS = (process.env.ADMIN_EMAILS ?? '')
+const ADMIN_ENTRIES = (process.env.ADMIN_EMAILS ?? '')
 	.split(',')
 	.map((e) => e.trim().toLowerCase())
 	.filter(Boolean)
 
+const ADMIN_EMAILS = ADMIN_ENTRIES.filter((e) => !e.startsWith('@'))
+const ADMIN_DOMAINS = ADMIN_ENTRIES.filter((e) => e.startsWith('@')).map((d) => d.slice(1))
+
 function emailIsAdmin(email: string | undefined): boolean {
-	return !!email && ADMIN_EMAILS.includes(email.toLowerCase())
+	if (!email) return false
+	const lower = email.toLowerCase()
+	return ADMIN_EMAILS.includes(lower) || ADMIN_DOMAINS.some((d) => lower.endsWith(`@${d}`))
 }
 
 /** Returns true for any admin (full or read-only). Use to guard /admin page access. */
