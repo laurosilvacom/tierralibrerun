@@ -1,6 +1,6 @@
 import Image from 'next/image'
-import { siteConfig } from '@/lib/config/site'
 import { type SanityImage } from '@/lib/sanity/types'
+import { siteConfig } from '@/lib/site'
 import '../styles/rainbow-logo.css'
 
 interface CompanyLogoProps {

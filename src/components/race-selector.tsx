@@ -14,8 +14,8 @@ import {
 	SelectTrigger
 } from '@/components/ui/select'
 
+import {formatRaceDateShort} from '@/lib/race-utils'
 import  {type RaceOptionForApplication} from '@/lib/sanity/types'
-import {formatRaceDateShort} from '@/lib/utils/race-utils'
 
 interface RaceSelectorProps {
 	raceOptions: RaceOptionForApplication[]

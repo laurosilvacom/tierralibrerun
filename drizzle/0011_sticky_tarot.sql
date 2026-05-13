@@ -1,1 +1,0 @@
-ALTER TABLE `fund_applications` ADD `gear_needs` text;

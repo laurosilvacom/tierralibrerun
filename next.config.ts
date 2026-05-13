@@ -27,6 +27,7 @@ const nextConfig: NextConfig = {
 					}
 				: false,
 	},
+	turbopack: {},
 	experimental: {
 		// Optimize package imports for better performance
 		optimizePackageImports: [

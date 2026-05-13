@@ -1,17 +1,14 @@
 import { auth } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
-import {
-	buildOnboardingPath,
-	resolveOnboardingReturnTarget,
-} from '@/lib/onboarding-routing'
-import { getCurrentUser } from '@/server/auth'
+import { resolveOnboardingReturnTarget } from '@/lib/routing'
 
 export const dynamic = 'force-dynamic'
 
-const NO_STORE_HEADERS = {
-	'cache-control': 'no-store, no-cache, must-revalidate',
-}
-
+/**
+ * Called after Clerk sign-up. Redirects to dashboard immediately.
+ * User record is created lazily in Convex on first authenticated page load.
+ * No separate onboarding flow required.
+ */
 export async function GET(request: Request) {
 	const url = new URL(request.url)
 	const next = resolveOnboardingReturnTarget(url.searchParams)
@@ -22,33 +19,11 @@ export async function GET(request: Request) {
 			{ status: 'pending' },
 			{
 				status: 202,
-				headers: NO_STORE_HEADERS,
+				headers: { 'cache-control': 'no-store, no-cache, must-revalidate' },
 			},
 		)
 	}
 
-	const user = await getCurrentUser()
-	if (!user) {
-		return NextResponse.json(
-			{ status: 'pending' },
-			{
-				status: 202,
-				headers: NO_STORE_HEADERS,
-			},
-		)
-	}
-
-	const redirectTo = user.onboardingCompleted
-		? (next ?? '/dashboard')
-		: buildOnboardingPath(next)
-
-	return NextResponse.json(
-		{
-			status: 'ready',
-			redirectTo,
-		},
-		{
-			headers: NO_STORE_HEADERS,
-		},
-	)
+	const redirectTo = next ?? '/dashboard'
+	return NextResponse.redirect(new URL(redirectTo, url.origin))
 }

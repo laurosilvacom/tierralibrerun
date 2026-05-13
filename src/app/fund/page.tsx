@@ -9,21 +9,17 @@ import {
 } from 'lucide-react'
 import Image from 'next/image'
 import Link from 'next/link'
-import { AuthButton } from '@/components/auth/auth-button'
+import { AuthButton } from '@/components/auth-button'
 import CompanyLogo from '@/components/company-logo'
 import { Button } from '@/components/ui/button'
 import { fundMetadata } from '@/lib/metadata'
-import { buildOnboardingPath } from '@/lib/onboarding-routing'
 import { getRaceCompanies, getSponsorCompanies } from '@/lib/sanity/queries'
-import { getUserType } from '@/server/auth/roles'
 
 export const metadata = fundMetadata
 
 export default async function AthletesFund() {
 	const user = await currentUser()
 	const isSignedIn = !!user
-	const userType = await getUserType()
-	const fundOnboardingHref = buildOnboardingPath('/fund/apply')
 
 	// Fetch all sponsor companies and race companies
 	const sponsorCompanies = await getSponsorCompanies()
@@ -90,34 +86,14 @@ export default async function AthletesFund() {
 										<Link href="/races">View Supported Races</Link>
 									</Button>
 									{isSignedIn ? (
-										userType === 'bipoc' ? (
-											<Button
-												variant="outline"
-												size="lg"
-												className="w-full sm:w-auto"
-												asChild
-											>
-												<Link href="/fund/apply">Apply for Race Entry</Link>
-											</Button>
-										) : userType === 'ally' ? (
-											<Button
-												variant="outline"
-												size="lg"
-												className="w-full sm:w-auto"
-												asChild
-											>
-												<Link href="/donate">Support Our Athletes</Link>
-											</Button>
-										) : (
-											<AuthButton
-												action="sign-up"
-												label="Complete Your Profile"
-												variant="outline"
-												size="lg"
-												redirectTo={fundOnboardingHref}
-												className="w-full sm:w-auto"
-											/>
-										)
+										<Button
+											variant="outline"
+											size="lg"
+											className="w-full sm:w-auto"
+											asChild
+										>
+											<Link href="/fund/apply">Apply for Race Entry</Link>
+										</Button>
 									) : (
 										<AuthButton
 											action="sign-up"
@@ -599,14 +575,9 @@ export default async function AthletesFund() {
 							{process.env.NEXT_PUBLIC_TAX_ID || ''}.
 						</p>
 						<div className="mb-20 flex flex-col justify-center gap-4 sm:flex-row md:mb-24">
-							{userType === 'bipoc' && (
+							{isSignedIn && (
 								<Button variant="outline" size="lg" asChild>
 									<Link href="/fund/apply">Apply for Race Entry</Link>
-								</Button>
-							)}
-							{userType === 'bipoc' && (
-								<Button variant="outline" size="lg" asChild>
-									<Link href="/mentor">Become a Mentor</Link>
 								</Button>
 							)}
 							<Button variant="outline" size="lg" asChild>

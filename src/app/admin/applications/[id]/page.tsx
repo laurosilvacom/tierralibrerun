@@ -1,740 +1,387 @@
-import { and, desc, eq } from 'drizzle-orm'
-import { ChevronLeft } from 'lucide-react'
+'use client'
+
+import { useConvexAuth, useMutation, useQuery } from 'convex/react'
+import { format } from 'date-fns'
+import {
+	ArrowLeft,
+	CheckCircle,
+	XCircle,
+	User,
+	MapPin,
+	Calendar,
+	Heart,
+	Trophy,
+} from 'lucide-react'
 import Link from 'next/link'
-import { redirect } from 'next/navigation'
-import { getUserApplicationStatus } from '../../../fund/apply/actions'
-import {
-	ActivityLogSection,
-	FundAdminStatusBadge,
-	RegistrationStatusBadge,
-	WorkflowActionPanel,
-	RaceDetailsDisplay,
-	ApplicationDeleteWithRedirect,
-} from '@/components/admin'
-import {
-	AdminDetailHeader,
-	AdminDetailSection,
-	AdminKeyValueGrid,
-	AdminLabeledText,
-	AdminDetailActions,
-} from '@/components/admin/admin-detail'
-import { CopyApplicationInformationButton } from '@/components/admin/copy-application-information-button'
-import EmailSender from '@/components/admin/email-sender'
-import { MentorMatchAssignmentCard } from '@/components/admin/mentor-match-assignment-card'
-import { UpdateFundApplicationRaceForm } from '@/components/admin/update-fund-application-race-form'
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
+import { use, useState } from 'react'
+import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Separator } from '@/components/ui/separator'
+import { Textarea } from '@/components/ui/textarea'
+import { api } from '@/convex/_generated/api'
+import  { type Id } from '@/convex/_generated/dataModel'
 
-import { formatLongDate } from '@/lib/dates'
-import { getAllRaceOptionsForApplication } from '@/lib/sanity/queries'
-import {
-	FUND_ADMIN_STATUS_LABELS,
-	getFundAdminStatus,
-	type FundWorkflowStage,
-} from '@/lib/types/workflow'
-import { initialsFromName } from '@/lib/utils'
-import { getAvatarUrlFromClerkId } from '@/server/clerk/avatar'
-import { db, emailLogs, users } from '@/server/db'
-import {
-	canAssignMentorToFundApplicationStage,
-	getFundMentorAssignmentContext,
-	getFundWorkflowContext,
-} from '@/server/workflow/service'
-
-interface Params {
-	id: string
-}
-
-interface Props {
-	params: Promise<Params>
-}
-
-const formatDate = formatLongDate
-
-function formatSlackDate(value: Date | string | null | undefined) {
-	if (!value) return 'Date TBD'
-	return new Date(value).toLocaleDateString('en-US', {
-		weekday: 'long',
-		month: 'long',
-		day: 'numeric',
-		year: 'numeric',
-	})
-}
-
-function normalizeSlackText(
-	value: string | null | undefined,
-	fallback = 'Not specified',
-) {
-	if (!value) return fallback
-
-	const normalized = value
-		.replace(/\r\n/g, '\n')
-		.replace(/\u00a0/g, ' ')
-		.replace(/[ \t]+\n/g, '\n')
-		.replace(/\n{3,}/g, '\n\n')
-		.trim()
-
-	return normalized || fallback
-}
-
-function yesNoPill(value: boolean) {
-	return value ? (
-		<span className="bg-primary/15 text-primary inline-flex items-center rounded-md px-2 py-1 text-xs font-medium">
-			Yes
-		</span>
-	) : (
-		<span className="bg-muted text-muted-foreground inline-flex items-center rounded-md px-2 py-1 text-xs font-medium">
-			No
-		</span>
-	)
-}
-
-function mentorPreferenceLabel(preference: string | null | undefined) {
-	if (!preference || preference === 'no-preference') return 'No preference'
-	if (preference === 'same-gender') return 'Prefers same-gender mentor'
-	return preference
-}
-
-function toFundWorkflowStage(
-	value: string | null | undefined,
-): FundWorkflowStage {
-	return (
-		((value || 'SUBMITTED').toUpperCase() as FundWorkflowStage) || 'SUBMITTED'
-	)
-}
-
-function buildSlackApplicationMessage({
-	email,
-	age,
-	zipcode,
-	bipocIdentity,
-	genderIdentity,
-	raceName,
-	raceDate,
-	raceLocation,
-	aboutThem,
-	accessToTrailRunning,
-	whyThisRace,
-	theRipple,
+export default function ApplicationDetailPage({
+	params,
 }: {
-	email: string
-	age: number | null
-	zipcode: string | null
-	bipocIdentity: boolean
-	genderIdentity: string | null
-	raceName: string
-	raceDate: Date | string | null | undefined
-	raceLocation: string | null
-	aboutThem: string | null
-	accessToTrailRunning: string | null
-	whyThisRace: string | null
-	theRipple: string | null
+	params: Promise<{ id: string }>
 }) {
-	const bold = (value: string) => `**${value}**`
+	const {
+		isAuthenticated: isConvexAuthenticated,
+		isLoading: isConvexAuthLoading,
+	} = useConvexAuth()
+	const { id } = use(params)
+	const app = useQuery(
+		api.applications.getById,
+		isConvexAuthenticated ? { id: id as Id<'fundApplications'> } : 'skip',
+	)
 
-	return [
-		bold('Email'),
-		normalizeSlackText(email),
-		`Age ${age ?? 'Not specified'}`,
-		'',
-		bold('ZIP/Postal Code'),
-		normalizeSlackText(zipcode),
-		'',
-		`BIPOC Identity ${bipocIdentity ? 'Yes' : 'No'}`,
-		`Gender Identity ${normalizeSlackText(genderIdentity)}`,
-		'',
-		bold('Race & Registration'),
-		normalizeSlackText(raceName),
-		formatSlackDate(raceDate),
-		normalizeSlackText(raceLocation, 'Location TBD'),
-		'',
-		bold('About Them'),
-		normalizeSlackText(aboutThem),
-		'',
-		bold('Access to Trail Running'),
-		normalizeSlackText(accessToTrailRunning),
-		'',
-		bold('Why This Race'),
-		normalizeSlackText(whyThisRace),
-		'',
-		bold('The Ripple'),
-		normalizeSlackText(theRipple),
-	].join('\n')
-}
+	const approve = useMutation(api.applications.approve)
+	const deny = useMutation(api.applications.deny)
+	const updateNotes = useMutation(api.applications.updateNotes)
 
-export default async function ApplicationDetailPage(props: Props) {
-	const params = await props.params
-	const workflowContext = await getFundWorkflowContext(params.id)
-	if (!workflowContext) {
-		redirect('/admin')
+	const [notes, setNotes] = useState('')
+	const [loading, setLoading] = useState<'approve' | 'deny' | 'notes' | null>(
+		null,
+	)
+
+	if (isConvexAuthLoading || app === undefined) {
+		return (
+			<div className="space-y-4">
+				<div className="bg-card h-8 w-48 animate-pulse rounded" />
+				<div className="bg-card h-64 animate-pulse rounded-xl" />
+			</div>
+		)
 	}
 
-	const { application, stage, events } = workflowContext
+	if (!isConvexAuthenticated) {
+		return (
+			<div className="text-muted-foreground py-24 text-center">
+				Refresh the page to reconnect your admin session.
+			</div>
+		)
+	}
 
-	const [userInfo] = await db
-		.select()
-		.from(users)
-		.where(eq(users.id, application.userId))
-	const clerkAvatarUrl = await getAvatarUrlFromClerkId(userInfo?.clerkId)
-	const avatarUrl = clerkAvatarUrl || userInfo?.profileImageUrl || null
-	const avatarInitials = initialsFromName(application.name || application.email)
+	if (app === null) {
+		return (
+			<div className="text-muted-foreground py-24 text-center">
+				Application not found.
+			</div>
+		)
+	}
 
-	const [
-		applicationStatus,
-		raceOptions,
-		mentorAssignmentContext,
-		applicationEmailLogs,
-	] = await Promise.all([
-		getUserApplicationStatus(application.userId),
-		getAllRaceOptionsForApplication(),
-		getFundMentorAssignmentContext(application.id),
-		db
-			.select({
-				id: emailLogs.id,
-				emailType: emailLogs.emailType,
-				recipientEmail: emailLogs.recipientEmail,
-				status: emailLogs.status,
-				sentAt: emailLogs.sentAt,
-			})
-			.from(emailLogs)
-			.where(
-				and(
-					eq(emailLogs.applicationId, application.id),
-					eq(emailLogs.applicationType, 'FUND'),
-				),
-			)
-			.orderBy(desc(emailLogs.sentAt)),
-	])
+	async function handleApprove() {
+		if (!app) return
+		if (!isConvexAuthenticated) {
+			toast.error('Your admin session is not ready. Refresh and try again.')
+			return
+		}
+		setLoading('approve')
+		try {
+			await approve({ id: app._id, adminNotes: notes || undefined })
+			toast.success('Application approved')
+			setNotes('')
+		} catch {
+			toast.error('Failed to approve')
+		} finally {
+			setLoading(null)
+		}
+	}
 
-	const matchingRace = raceOptions?.find(
-		(option) =>
-			`${option.raceSeries.name} - ${option.distance}` === application.race,
-	)
+	async function handleDeny() {
+		if (!app) return
+		if (!isConvexAuthenticated) {
+			toast.error('Your admin session is not ready. Refresh and try again.')
+			return
+		}
+		setLoading('deny')
+		try {
+			await deny({ id: app._id, adminNotes: notes || undefined })
+			toast.success('Application denied')
+			setNotes('')
+		} catch {
+			toast.error('Failed to deny')
+		} finally {
+			setLoading(null)
+		}
+	}
 
-	const raceOptionItems = Array.from(
-		new Set(
-			(raceOptions ?? []).map(
-				(option) => `${option.raceSeries.name} - ${option.distance}`,
-			),
-		),
-	)
-		.sort((a, b) => a.localeCompare(b))
-		.map((value) => ({ value, label: value }))
+	async function handleSaveNotes() {
+		if (!app) return
+		if (!isConvexAuthenticated) {
+			toast.error('Your admin session is not ready. Refresh and try again.')
+			return
+		}
+		setLoading('notes')
+		try {
+			await updateNotes({ id: app._id, adminNotes: notes })
+			toast.success('Notes saved')
+		} catch {
+			toast.error('Failed to save notes')
+		} finally {
+			setLoading(null)
+		}
+	}
 
-	const raceName = application.race
-	const raceDate = application.raceDate || matchingRace?.raceSeries?.date
-	const raceDateLabel = formatDate(raceDate)
-	const raceLocation =
-		application.raceLocation ||
-		matchingRace?.raceSeries?.location ||
-		'Location TBD'
-	const submittedLabel = formatDate(application.createdAt)
-	const slackApplicationMessage = buildSlackApplicationMessage({
-		email: application.email,
-		age: application.age,
-		zipcode: application.zipcode,
-		bipocIdentity: Boolean(application.bipocIdentity),
-		genderIdentity: application.genderIdentity,
-		raceName,
-		raceDate,
-		raceLocation,
-		aboutThem: application.reason,
-		accessToTrailRunning: application.experience,
-		whyThisRace: application.goals,
-		theRipple: application.communityContribution,
-	})
-	const fundStage = toFundWorkflowStage(stage)
-	const adminStatus = getFundAdminStatus(fundStage, {
-		status: application.status,
-	})
-	const canAssignMentor = canAssignMentorToFundApplicationStage(fundStage)
-	const mentorAssignmentDisabledReason = canAssignMentor
-		? null
-		: 'Mentor pairing opens once the athlete has been approved and moved into the active race workflow.'
-	const mentorshipStatusLabel = application.wantsMentor
-		? 'Requested'
-		: 'Not requested'
-	const mentorPreferenceText = application.wantsMentor
-		? mentorPreferenceLabel(application.mentorGenderPreference)
-		: 'No mentor requested'
-	const supportNotes = [
-		{
-			key: 'mentorship-expectations',
-			label: 'Mentorship expectations',
-			value: application.tierraLibreContribution,
-		},
-		{
-			key: 'other-support',
-			label: 'Other support needed',
-			value: application.additionalAssistanceNeeds,
-		},
-		{
-			key: 'gear-needs',
-			label: 'Gear needs',
-			value: application.gearNeeds,
-			eyebrow: 'Legacy field',
-		},
-	].filter(
-		(
-			item,
-		): item is {
-			key: string
-			label: string
-			value: string
-			eyebrow?: string
-		} => Boolean(item.value),
-	)
+	const STATUS_COLOR = {
+		PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
+		APPROVED: 'bg-green-50 text-green-700 border-green-200',
+		DENIED: 'bg-red-50 text-red-700 border-red-200',
+	} as const
+	const statusColor = STATUS_COLOR[app.status as keyof typeof STATUS_COLOR] ?? STATUS_COLOR.PENDING
 
 	return (
 		<div className="space-y-6">
-			<Link
-				href="/admin/fund-applications"
-				className="text-muted-foreground hover:text-foreground inline-flex items-center gap-2 text-sm"
-			>
-				<ChevronLeft className="h-4 w-4" />
-				Back to Athlete Applications
-			</Link>
-
-			<AdminDetailHeader
-				title={application.name}
-				subtitle={`${raceName} • Applied ${submittedLabel}`}
-				avatar={
-					<Avatar className="border-border/60 h-12 w-12 border">
-						{avatarUrl ? (
-							<AvatarImage src={avatarUrl} alt={`${application.name} avatar`} />
-						) : null}
-						<AvatarFallback className="text-xs font-semibold">
-							{avatarInitials}
-						</AvatarFallback>
-					</Avatar>
-				}
-				status={
-					<div className="flex flex-wrap items-center gap-2">
-						<FundAdminStatusBadge
-							stage={stage}
-							status={application.status}
-							size="md"
-						/>
-						<RegistrationStatusBadge
-							status={application.registrationStatus || 'PENDING'}
-						/>
-					</div>
-				}
-				actions={
-					<div className="flex w-full flex-wrap items-center gap-2 md:w-auto">
-						<CopyApplicationInformationButton text={slackApplicationMessage} />
-						<Button asChild variant="outline" size="sm">
-							<Link href={`/admin/users/${application.userId}`}>
-								Open User Profile
-							</Link>
+			{/* Header */}
+			<div className="flex items-start justify-between gap-4">
+				<div className="flex items-center gap-3">
+					<Link href="/admin/applications">
+						<Button variant="ghost" size="sm">
+							<ArrowLeft className="mr-1 h-4 w-4" />
+							Back
 						</Button>
-						<EmailSender
-							applicationId={application.id}
-							applicantName={application.name}
-							recipientEmail={application.email}
-							status={
-								application.status as
-									| 'APPROVED'
-									| 'WAITLISTED'
-									| 'REJECTED'
-									| 'PENDING'
-							}
-							applicationWorkflowStage={stage}
-							applicationRecordStatus={application.status}
-							defaultTokens={{
-								raceName,
-								raceDate: raceDateLabel,
-								raceLocation,
-								wantsMentor: application.wantsMentor,
-								mentorGenderPreference: application.mentorGenderPreference,
-							}}
-							triggerLabel="Send Email"
-						/>
+					</Link>
+					<div>
+						<div className="flex items-center gap-2">
+							<h1 className="text-xl font-bold">{app.name}</h1>
+							<span
+								className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
+							>
+								{app.status}
+							</span>
+						</div>
+						<p className="text-muted-foreground text-sm">
+							{app.race}
+							{app.raceDate
+								? ` · ${format(new Date(app.raceDate), 'MMM d, yyyy')}`
+								: ''}
+						</p>
 					</div>
-				}
-			/>
+				</div>
 
-			<div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-				<div className="bg-card rounded-xl border p-4">
-					<p className="text-muted-foreground text-xs font-medium uppercase">
-						Admin Status
-					</p>
-					<p className="text-foreground mt-1 text-2xl font-semibold">
-						{FUND_ADMIN_STATUS_LABELS[adminStatus]}
-					</p>
-				</div>
-				<div className="bg-card rounded-xl border p-4">
-					<p className="text-muted-foreground text-xs font-medium uppercase">
-						Registration Status
-					</p>
-					<div className="mt-2">
-						<RegistrationStatusBadge
-							status={application.registrationStatus || 'PENDING'}
-						/>
+				{app.status === 'PENDING' && (
+					<div className="flex gap-2">
+						<Button
+							variant="outline"
+							onClick={handleDeny}
+							disabled={!!loading}
+							className="border-red-200 text-red-600 hover:bg-red-50"
+						>
+							<XCircle className="mr-1 h-4 w-4" />
+							Deny
+						</Button>
+						<Button
+							onClick={handleApprove}
+							disabled={!!loading}
+							className="bg-green-600 text-white hover:bg-green-700"
+						>
+							<CheckCircle className="mr-1 h-4 w-4" />
+							Approve
+						</Button>
 					</div>
-				</div>
-				<div className="bg-card rounded-xl border p-4">
-					<p className="text-muted-foreground text-xs font-medium uppercase">
-						Remaining This Cycle
-					</p>
-					<p className="text-foreground mt-1 text-2xl font-semibold">
-						{applicationStatus.remainingApplications}
-					</p>
-				</div>
-				<div className="bg-card rounded-xl border p-4">
-					<p className="text-muted-foreground text-xs font-medium uppercase">
-						Races Applied (6 Months)
-					</p>
-					<p className="text-foreground mt-1 text-2xl font-semibold">
-						{applicationStatus.appliedRaces.length}
-					</p>
-				</div>
+				)}
 			</div>
 
-			<div className="grid gap-6 xl:grid-cols-[minmax(0,1fr)_360px]">
-				<div className="order-2 space-y-6 xl:order-1">
-					<AdminDetailSection
-						title="Athlete Profile"
-						description="Who this applicant is and how to contact them."
-					>
-						<AdminKeyValueGrid
-							items={[
-								{
-									key: 'fullName',
-									label: 'Full Name',
-									value: (
-										<Link
-											href={`/admin/users/${application.userId}`}
-											className="text-primary font-medium hover:underline"
-										>
-											{application.name}
-										</Link>
-									),
-								},
-								{ key: 'email', label: 'Email', value: application.email },
-								{
-									key: 'age',
-									label: 'Age',
-									value: application.age || 'Not specified',
-								},
-								{
-									key: 'zip',
-									label: 'ZIP/Postal Code',
-									value: application.zipcode || 'Not specified',
-								},
-								{
-									key: 'bipoc',
-									label: 'BIPOC Identity',
-									value: yesNoPill(Boolean(application.bipocIdentity)),
-								},
-								{
-									key: 'gender',
-									label: 'Gender Identity',
-									value: application.genderIdentity || 'Not specified',
-								},
-								{
-									key: 'referral',
-									label: 'Referral Source',
-									value: application.referralSource || 'Not specified',
-								},
-								{
-									key: 'submitted',
-									label: 'Submitted',
-									value: submittedLabel,
-								},
-							]}
-							columns={2}
-						/>
-					</AdminDetailSection>
-
-					<AdminDetailSection
-						title="Race & Registration"
-						description="Race details and registration progress."
-					>
-						<div className="space-y-4">
+			<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+				{/* Main content */}
+				<div className="space-y-6 lg:col-span-2">
+					{/* About the applicant */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">About Them</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
 							<div>
-								<p className="text-muted-foreground mb-2 text-sm font-medium">
-									Race Selection
+								<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+									Why this race
 								</p>
-								<RaceDetailsDisplay
-									raceString={application.race}
-									raceOptions={raceOptions}
-								/>
-							</div>
-
-							<AdminKeyValueGrid
-								items={[
-									{
-										key: 'registrationStatus',
-										label: 'Registration Status',
-										value: (
-											<RegistrationStatusBadge
-												status={application.registrationStatus || 'PENDING'}
-												size="md"
-											/>
-										),
-									},
-									{
-										key: 'firstTrail',
-										label: 'First Trail Race?',
-										value: yesNoPill(Boolean(application.firstRace)),
-									},
-									{
-										key: 'raceDate',
-										label: 'Race Date',
-										value: raceDateLabel,
-									},
-									{
-										key: 'raceLocation',
-										label: 'Race Location',
-										value: raceLocation,
-									},
-								]}
-								columns={2}
-							/>
-
-							<div>
-								<p className="text-muted-foreground mb-2 text-sm font-medium">
-									Change Race
+								<p className="text-sm leading-relaxed whitespace-pre-line">
+									{app.reason}
 								</p>
-								<UpdateFundApplicationRaceForm
-									applicationId={application.id}
-									currentRace={application.race}
-									raceOptions={raceOptionItems}
-								/>
 							</div>
-						</div>
-					</AdminDetailSection>
-
-					<AdminDetailSection
-						title="Application Narrative"
-						description="Core responses used for funding decisions."
-					>
-						<div className="space-y-5">
-							<AdminLabeledText label="About Them">
-								{application.reason || 'Not specified'}
-							</AdminLabeledText>
-							<AdminLabeledText label="Access to Trail Running">
-								{application.experience || 'Not specified'}
-							</AdminLabeledText>
-							<AdminLabeledText label="Why This Race">
-								{application.goals || 'Not specified'}
-							</AdminLabeledText>
-							<AdminLabeledText label="The Ripple">
-								{application.communityContribution || 'Not specified'}
-							</AdminLabeledText>
-						</div>
-					</AdminDetailSection>
-
-					<AdminDetailSection
-						title="Mentorship & Support"
-						description="Pair the athlete well, then use their notes to shape the relationship and support plan."
-					>
-						<div className="space-y-6">
-							{/* Context row — request + preference (pairing status lives in the card below) */}
-							<div className="grid gap-3 md:grid-cols-2">
-								<div className="border-border/70 bg-muted/20 rounded-xl border p-4">
-									<p className="text-muted-foreground text-[11px] font-medium tracking-[0.1em] uppercase">
-										Mentorship request
+							{app.experience && (
+								<div>
+									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+										Access to trail running
 									</p>
-									<div className="mt-2 flex items-center gap-2">
-										<p className="text-base font-semibold">
-											{mentorshipStatusLabel}
-										</p>
-										<Badge
-											variant={
-												application.wantsMentor ? 'secondary' : 'outline'
-											}
-										>
-											{application.wantsMentor
-												? 'Athlete asked for it'
-												: 'Optional'}
+									<p className="text-sm leading-relaxed whitespace-pre-line">
+										{app.experience}
+									</p>
+								</div>
+							)}
+							{app.goals && (
+								<div>
+									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+										Goals
+									</p>
+									<p className="text-sm leading-relaxed whitespace-pre-line">
+										{app.goals}
+									</p>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+
+					{/* Community */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Community Impact</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-4">
+							<div>
+								<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+									Community contribution
+								</p>
+								<p className="text-sm leading-relaxed whitespace-pre-line">
+									{app.communityContribution}
+								</p>
+							</div>
+							{app.tierraLibreContribution && (
+								<div>
+									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+										Tierra Libre contribution
+									</p>
+									<p className="text-sm leading-relaxed whitespace-pre-line">
+										{app.tierraLibreContribution}
+									</p>
+								</div>
+							)}
+							{app.additionalAssistanceNeeds && (
+								<div>
+									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
+										Additional assistance needs
+									</p>
+									<p className="text-sm leading-relaxed whitespace-pre-line">
+										{app.additionalAssistanceNeeds}
+									</p>
+								</div>
+							)}
+						</CardContent>
+					</Card>
+				</div>
+
+				{/* Sidebar */}
+				<div className="space-y-4">
+					{/* Demographics */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Applicant Info</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3 text-sm">
+							<div className="flex items-center gap-2">
+								<User className="text-muted-foreground h-4 w-4 shrink-0" />
+								<span>{app.email}</span>
+							</div>
+							{app.age > 0 && (
+								<div className="flex items-center gap-2">
+									<span className="text-muted-foreground text-xs">Age</span>
+									<span>{app.age}</span>
+								</div>
+							)}
+							{app.zipcode && app.zipcode !== 'Not specified' && (
+								<div className="flex items-center gap-2">
+									<MapPin className="text-muted-foreground h-4 w-4 shrink-0" />
+									<span>{app.zipcode}</span>
+								</div>
+							)}
+							<Separator />
+							<div className="flex flex-wrap gap-1.5">
+								{app.bipocIdentity && (
+									<Badge variant="outline" className="text-xs">
+										BIPOC
+									</Badge>
+								)}
+								{app.genderIdentity &&
+									app.genderIdentity !== 'Not specified' && (
+										<Badge variant="outline" className="text-xs">
+											{app.genderIdentity}
 										</Badge>
-									</div>
-									<p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-										{application.wantsMentor
-											? 'Pair with someone who can offer useful guidance through the race build and weekend.'
-											: 'A mentor can still be assigned if the team believes it would help.'}
-									</p>
-								</div>
-
-								<div className="border-border/70 bg-muted/20 rounded-xl border p-4">
-									<p className="text-muted-foreground text-[11px] font-medium tracking-[0.1em] uppercase">
-										Stated preference
-									</p>
-									<p className="mt-2 text-base font-semibold">
-										{mentorPreferenceText}
-									</p>
-									<p className="text-muted-foreground mt-2 text-sm leading-relaxed">
-										Preference checks are handled in the pairing flow so
-										conflicts are visible before anything is saved.
-									</p>
-								</div>
-							</div>
-
-							{/* Support context — shown before pairing controls so admin reads athlete needs first */}
-							<div className="space-y-3">
-								<div className="space-y-1">
-									<h3 className="text-sm font-semibold">Support context</h3>
-									<p className="text-muted-foreground text-sm leading-relaxed">
-										Review these notes before choosing a mentor — they shape the
-										tone, cadence, and practical support of the pairing.
-									</p>
-								</div>
-
-								{supportNotes.length > 0 ? (
-									<div className="grid gap-3 md:grid-cols-2">
-										{supportNotes.map((item) => (
-											<div
-												key={item.key}
-												className="border-border/70 bg-muted/20 rounded-xl border p-4"
-											>
-												<div className="flex flex-wrap items-center gap-2">
-													<p className="text-sm font-semibold">{item.label}</p>
-													{item.eyebrow ? (
-														<Badge variant="outline">{item.eyebrow}</Badge>
-													) : null}
-												</div>
-												<p className="text-muted-foreground mt-2 text-sm leading-relaxed whitespace-pre-line">
-													{item.value}
-												</p>
-											</div>
-										))}
-									</div>
-								) : (
-									<div className="border-border/70 bg-muted/15 rounded-xl border border-dashed px-4 py-5">
-										<p className="text-sm font-medium">
-											No additional mentorship or support notes were provided.
-										</p>
-										<p className="text-muted-foreground mt-1 text-sm leading-relaxed">
-											You can still pair a mentor based on race fit, experience,
-											and the athlete&apos;s overall application context.
-										</p>
-									</div>
+									)}
+								{app.firstRace && (
+									<Badge variant="outline" className="text-xs">
+										First trail race
+									</Badge>
+								)}
+								{app.wantsMentor && (
+									<Badge variant="outline" className="text-xs">
+										<Heart className="mr-1 h-3 w-3" />
+										Wants mentor
+									</Badge>
 								)}
 							</div>
+						</CardContent>
+					</Card>
 
-							{/* Pairing workspace — the actual assignment controls */}
-							<MentorMatchAssignmentCard
-								fundApplicationId={application.id}
-								athleteName={application.name}
-								athleteEmail={application.email}
-								wantsMentor={Boolean(application.wantsMentor)}
-								currentMatch={mentorAssignmentContext.currentMatch}
-								mentorOptions={mentorAssignmentContext.mentorOptions}
-								hiddenConflictCount={
-									mentorAssignmentContext.hiddenConflictCount
-								}
-								canAssign={canAssignMentor}
-								disabledReason={mentorAssignmentDisabledReason}
-							/>
-						</div>
-					</AdminDetailSection>
-
-					<AdminDetailSection
-						title="Account & Eligibility History"
-						description="Eligibility checks and account context."
-					>
-						<AdminKeyValueGrid
-							items={[
-								{
-									key: 'applicationCount',
-									label: 'Applications Used',
-									value: `${applicationStatus.applicationCount}/1`,
-								},
-								{
-									key: 'remainingApplications',
-									label: 'Available Applications',
-									value: applicationStatus.remainingApplications,
-								},
-								{
-									key: 'userId',
-									label: 'User ID',
-									value: application.userId,
-									mono: true,
-								},
-								...(userInfo
-									? [
-											{
-												key: 'clerkId',
-												label: 'Clerk ID',
-												value: userInfo.clerkId,
-												mono: true,
-											},
-											{
-												key: 'accountCreated',
-												label: 'Account Created',
-												value: formatDate(userInfo.createdAt),
-											},
-										]
-									: []),
-							]}
-							columns={2}
-						/>
-
-						{applicationStatus.appliedRaces.length > 0 && (
-							<div className="border-border/70 bg-muted/40 rounded-lg border p-4">
-								<p className="text-muted-foreground mb-3 text-sm font-medium">
-									Applied Races (Last 6 Months)
-								</p>
-								<div className="flex flex-wrap gap-2">
-									{applicationStatus.appliedRaces.map((race, index) => (
-										<span
-											key={`${race}-${index}`}
-											className={`rounded-md px-2.5 py-1 text-xs font-medium ${
-												race === application.race
-													? 'border-primary/30 bg-primary/15 text-primary border'
-													: 'bg-muted text-muted-foreground'
-											}`}
-										>
-											{race}
-										</span>
-									))}
-								</div>
+					{/* Race info */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Race</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-2 text-sm">
+							<div className="flex items-start gap-2">
+								<Trophy className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
+								<span>{app.race}</span>
 							</div>
-						)}
-					</AdminDetailSection>
-				</div>
+							{app.raceDate && (
+								<div className="flex items-center gap-2">
+									<Calendar className="text-muted-foreground h-4 w-4 shrink-0" />
+									<span>{format(new Date(app.raceDate), 'MMMM d, yyyy')}</span>
+								</div>
+							)}
+							{app.raceLocation && (
+								<div className="flex items-center gap-2">
+									<MapPin className="text-muted-foreground h-4 w-4 shrink-0" />
+									<span>{app.raceLocation}</span>
+								</div>
+							)}
+						</CardContent>
+					</Card>
 
-				<aside className="order-1 xl:order-2">
-					<div className="space-y-6 xl:sticky xl:top-6">
-						<AdminDetailSection
-							title="Admin Actions"
-							description="Use the smallest set of actions needed to move this athlete forward."
-						>
-							<WorkflowActionPanel
-								applicationId={application.id}
-								applicationType="FUND"
-								currentStage={stage}
-								currentRecordStatus={application.status}
+					{/* Submitted */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Submitted</CardTitle>
+						</CardHeader>
+						<CardContent className="text-sm">
+							<p className="text-muted-foreground">
+								{format(new Date(app._creationTime), 'MMMM d, yyyy h:mm a')}
+							</p>
+							{app.reviewedAt && (
+								<p className="text-muted-foreground mt-1">
+									Reviewed {format(new Date(app.reviewedAt), 'MMM d, yyyy')}
+								</p>
+							)}
+						</CardContent>
+					</Card>
+
+					{/* Admin notes */}
+					<Card>
+						<CardHeader>
+							<CardTitle className="text-base">Admin Notes</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-2">
+							<Textarea
+								placeholder="Add notes about this application..."
+								value={notes || app.adminNotes || ''}
+								onChange={(e) => setNotes(e.target.value)}
+								rows={4}
+								className="text-sm"
 							/>
-						</AdminDetailSection>
-
-						<ActivityLogSection
-							applicationType="FUND"
-							workflowEvents={events}
-							emailLogs={applicationEmailLogs}
-						/>
-					</div>
-				</aside>
-			</div>
-
-			<AdminDetailActions className="pt-2">
-				<div>
-					<Button variant="outline" asChild>
-						<Link href="/admin/fund-applications">
-							Back to Athlete Applications
-						</Link>
-					</Button>
+							<Button
+								size="sm"
+								variant="outline"
+								onClick={handleSaveNotes}
+								disabled={loading === 'notes'}
+								className="w-full"
+							>
+								Save notes
+							</Button>
+						</CardContent>
+					</Card>
 				</div>
-				<ApplicationDeleteWithRedirect
-					applicationId={application.id}
-					applicantName={application.name}
-					race={application.race}
-					redirectTo="/admin/fund-applications"
-				/>
-			</AdminDetailActions>
+			</div>
 		</div>
 	)
 }

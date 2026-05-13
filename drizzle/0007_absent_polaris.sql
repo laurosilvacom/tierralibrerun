@@ -1,1 +1,0 @@
-ALTER TABLE `mentor_applications` ADD `mentor_gender_preference` text;
