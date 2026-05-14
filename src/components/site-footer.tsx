@@ -1,8 +1,44 @@
 'use client'
 
-import { Instagram } from 'lucide-react'
+import { Instagram, Moon, Sun } from 'lucide-react'
 import Link from 'next/link'
+import { usePathname } from 'next/navigation'
+import { useTheme } from 'next-themes'
+import { useEffect, useState } from 'react'
 import { TrailMarkerLogo } from '@/components/logo'
+
+const HIDE_FOOTER_PREFIXES = ['/dashboard', '/fund/apply']
+
+function ThemeToggle() {
+	const { resolvedTheme, setTheme } = useTheme()
+	const [mounted, setMounted] = useState(false)
+
+	useEffect(() => {
+		setMounted(true)
+	}, [])
+
+	const isDark = mounted && resolvedTheme === 'dark'
+
+	return (
+		<button
+			type="button"
+			onClick={() => setTheme(isDark ? 'light' : 'dark')}
+			aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+			title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+			className="bg-muted/50 hover:bg-muted text-muted-foreground hover:text-foreground inline-flex h-9 w-9 items-center justify-center rounded-full transition-colors"
+		>
+			{mounted ? (
+				isDark ? (
+					<Sun className="h-4 w-4" />
+				) : (
+					<Moon className="h-4 w-4" />
+				)
+			) : (
+				<Sun className="h-4 w-4 opacity-0" />
+			)}
+		</button>
+	)
+}
 
 const siteName = process.env.NEXT_PUBLIC_SITE_NAME || 'Tierra Libre Run'
 const siteTagline = process.env.NEXT_PUBLIC_SITE_TAGLINE || 'Trail Access for BIPOC Athletes'
@@ -10,6 +46,10 @@ const instagramUrl = process.env.NEXT_PUBLIC_INSTAGRAM_URL || ''
 const taxId = process.env.NEXT_PUBLIC_TAX_ID || ''
 
 export function Footer() {
+	const pathname = usePathname()
+	if (HIDE_FOOTER_PREFIXES.some((prefix) => pathname?.startsWith(prefix))) {
+		return null
+	}
 	return (
 		<footer className="bg-card border-border/40 border-t">
 			<div className="container mx-auto px-4 md:px-6">
@@ -146,12 +186,15 @@ export function Footer() {
 						<p className="text-muted-foreground text-xs">
 							© {new Date().getFullYear()} {siteName}, Nonprofit Initiative
 						</p>
-						{taxId && (
-							<p className="text-muted-foreground text-xs">
-								501(c)(3) with fiscal sponsorship. Donations are tax-deductible. Tax ID:{' '}
-								{taxId}
-							</p>
-						)}
+						<div className="flex flex-col items-center gap-4 md:flex-row">
+							{taxId && (
+								<p className="text-muted-foreground text-xs">
+									501(c)(3) with fiscal sponsorship. Donations are tax-deductible. Tax ID:{' '}
+									{taxId}
+								</p>
+							)}
+							<ThemeToggle />
+						</div>
 					</div>
 				</div>
 				</div>

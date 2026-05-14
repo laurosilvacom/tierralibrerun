@@ -40,30 +40,24 @@ export default async function ApplyPage() {
 	const remainingApplications = Math.max(0, 1 - recentApps.length)
 
 	return (
-		<main className="bg-background text-foreground min-h-screen">
-			<div className="container mx-auto px-4 py-8 md:px-6 lg:py-12">
-				<div className="mx-auto max-w-6xl">
-					<ApplicationForm
-						userData={{
-							name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
-							email: user.emailAddresses?.[0]?.emailAddress ?? '',
-							userId: user.id,
-						}}
-						applicationStatus={{
-							applications: myApplications.map((app) => ({
-								id: app._id,
-								race: app.race,
-								status: app.status,
-								createdAt: new Date(app._creationTime),
-							})),
-							applicationCount: myApplications.length,
-							remainingApplications,
-							appliedRaces,
-						}}
-						raceOptions={raceOptions}
-					/>
-				</div>
-			</div>
-		</main>
+		<ApplicationForm
+			userData={{
+				name: `${user.firstName ?? ''} ${user.lastName ?? ''}`.trim(),
+				email: user.emailAddresses?.[0]?.emailAddress ?? '',
+				userId: user.id,
+			}}
+			applicationStatus={{
+				applications: myApplications.map((app) => ({
+					id: app._id,
+					race: app.race,
+					status: app.status,
+					createdAt: new Date(app._creationTime),
+				})),
+				applicationCount: myApplications.length,
+				remainingApplications,
+				appliedRaces,
+			}}
+			raceOptions={raceOptions}
+		/>
 	)
 }
