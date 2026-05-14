@@ -9,8 +9,6 @@
 			"@/*": ["./src/*"],
 			"@/components/*": ["./src/components/*"],
 			"@/lib/*": ["./src/lib/*"],
-			"@/server/*": ["./src/server/*"],
-			"@/types/*": ["./src/types/*"],
 			"@/styles/*": ["./src/styles/*"],
 			"@/ui": ["./src/components/ui"]
 		},

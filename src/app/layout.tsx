@@ -4,11 +4,12 @@ import { SpeedInsights } from '@vercel/speed-insights/next'
 import { type Metadata, type Viewport } from 'next'
 import localFont from 'next/font/local'
 import { Toaster } from 'sonner'
-import { Footer } from '@/components/layout/footer'
-import { Header } from '@/components/layout/header'
-import { ThemeProvider } from '@/components/providers/theme-provider'
-import { siteConfig, socialConfig } from '@/lib/config/site'
+import { ConvexClientProvider } from '@/components/convex-provider'
+import { Footer } from '@/components/site-footer'
+import { Header } from '@/components/site-header'
+import { ThemeProvider } from '@/components/theme-provider'
 import { env } from '@/lib/env'
+import { siteConfig, socialConfig } from '@/lib/site'
 import '@/styles/globals.css'
 
 const wotfard = localFont({
@@ -118,6 +119,11 @@ export const viewport: Viewport = {
 const cx = (...classes: (string | false | null | undefined)[]) =>
 	classes.filter(Boolean).join(' ')
 
+function safeClerkFallback(value: string | undefined, fallback: string) {
+	if (!value || value === '/onboarding') return fallback
+	return value
+}
+
 export default function RootLayout({
 	children,
 	modal,
@@ -126,12 +132,14 @@ export default function RootLayout({
 	modal: React.ReactNode
 }>) {
 	const baseUrl = siteConfig.url
-	const signInFallbackRedirectUrl =
-		env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ??
-		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
-	const signUpFallbackRedirectUrl =
-		env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ??
-		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+	const signInFallbackRedirectUrl = safeClerkFallback(
+		env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL,
+		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,
+	)
+	const signUpFallbackRedirectUrl = safeClerkFallback(
+		env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL,
+		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL,
+	)
 
 	const socialLinks = [socialConfig.instagram, socialConfig.twitter].filter(
 		Boolean,
@@ -200,20 +208,22 @@ export default function RootLayout({
 					/>
 				</head>
 				<body className="flex min-h-screen flex-col">
-					<ThemeProvider
-						attribute="class"
-						defaultTheme="system"
-						enableSystem
-						disableTransitionOnChange
-					>
-						<Header />
-						<main className="grow">
-							{children}
-							{modal}
-							<Toaster position="top-right" />
-						</main>
-						<Footer />
-					</ThemeProvider>
+					<ConvexClientProvider>
+						<ThemeProvider
+							attribute="class"
+							defaultTheme="system"
+							enableSystem
+							disableTransitionOnChange
+						>
+							<Header />
+							<main className="grow">
+								{children}
+								{modal}
+								<Toaster position="top-right" />
+							</main>
+							<Footer />
+						</ThemeProvider>
+					</ConvexClientProvider>
 					<Analytics />
 					<SpeedInsights />
 				</body>

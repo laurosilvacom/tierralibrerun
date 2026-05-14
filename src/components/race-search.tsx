@@ -24,8 +24,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from '@/components/ui/select'
-import { useDebouncedValue } from '@/lib/hooks/use-debounced-value'
-import { useSearchAnalytics } from '@/lib/hooks/use-search-analytics'
+import { useDebouncedValue, useSearchAnalytics  } from '@/lib/hooks'
 import {
 	type RaceSeriesListItem,
 	type RaceDistanceListItem,

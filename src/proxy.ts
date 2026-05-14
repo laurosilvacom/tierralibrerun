@@ -8,10 +8,9 @@ import { type NextRequest } from 'next/server'
 /**
  * Routes accessible without authentication.
  *
- * Protected routes (/dashboard, /admin, /fund/apply, /mentor/apply, etc.)
+ * Protected routes (/dashboard, /admin, /fund/apply, etc.)
  * are NOT listed here — they require sign-in at the middleware level.
- * Those routes also have their own layout-level guards (requireOnboardedUser,
- * requireAdmin) as a second layer of defence.
+ * Those routes also have their own layout-level guards as a second layer of defence.
  */
 const isPublicRoute = createRouteMatcher([
 	// Marketing & informational pages
@@ -22,17 +21,16 @@ const isPublicRoute = createRouteMatcher([
 	'/hyak',
 	'/races(.*)',
 	'/fund',
+	'/fund/apply(.*)',
+	'/mentor',
 	'/code-of-conduct',
 	'/companies(.*)',
 	'/privacy-policy',
 	'/terms-of-service',
 
-	// Mentor landing page (handles auth state internally)
-	'/mentor',
-
-	// Onboarding flow (must be accessible during sign-up)
-	'/onboarding',
+	// Post-signup redirect bridge
 	'/new-user',
+	'/onboarding',
 
 	// Sanity Studio (has its own auth)
 	'/studio(.*)',

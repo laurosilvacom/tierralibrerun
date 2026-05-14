@@ -12,6 +12,8 @@ export default [
 			'**/.turbo/**',
 			'**/dist/**',
 			'**/coverage/**',
+			'convex/_generated/**',
+			'src/convex/_generated/**',
 			'pnpm-lock.yaml',
 		],
 	},

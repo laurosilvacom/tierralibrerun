@@ -1,8 +1,8 @@
 import { type PortableTextBlock } from '@portabletext/types'
 import Link from 'next/link'
 import { PortableText, type PortableTextComponents } from 'next-sanity'
+import { FundApplyButton } from '@/components/apply-button'
 import CompanyLogo from '@/components/company-logo'
-import { FundApplyButton } from '@/components/fund-apply-button'
 import { Badge } from '@/components/ui/badge'
 import { type RaceDistanceDetail } from '@/lib/sanity/types'
 
