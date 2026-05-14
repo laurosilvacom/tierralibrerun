@@ -159,6 +159,7 @@ export default function ApplicationForm({
 	const router = useRouter()
 	const searchParams = useSearchParams()
 	const mainRef = useRef<HTMLDivElement>(null)
+	const canStartApplication = applicationStatus.remainingApplications > 0
 
 	const scrollToTop = useCallback(() => {
 		mainRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })
@@ -315,7 +316,8 @@ export default function ApplicationForm({
 			toast.success('Application submitted successfully!')
 			router.push('/fund/apply/success')
 		} catch (error) {
-			const msg = error instanceof Error ? error.message : 'Failed to submit application'
+			const msg =
+				error instanceof Error ? error.message : 'Failed to submit application'
 			toast.error(msg)
 			console.error('Application submission error:', error)
 		} finally {
@@ -323,9 +325,7 @@ export default function ApplicationForm({
 		}
 	}
 
-	const submitDisabled =
-		isSubmitting ||
-		!isStepComplete(currentStep)
+	const submitDisabled = isSubmitting || !isStepComplete(currentStep)
 
 	/* =======================================================
 	   Shared UI Primitives
@@ -356,9 +356,7 @@ export default function ApplicationForm({
 			return (
 				<p className="text-muted-foreground mt-2 text-xs">
 					{len}/{max} characters{' '}
-					<span className="text-destructive">
-						({min - len} more needed)
-					</span>
+					<span className="text-destructive">({min - len} more needed)</span>
 				</p>
 			)
 		}
@@ -438,7 +436,9 @@ export default function ApplicationForm({
 					</div>
 					<div>
 						<p className="text-sm font-semibold">BIPOC Athlete Fund</p>
-						<p className="text-muted-foreground text-xs">Trail Running Community</p>
+						<p className="text-muted-foreground text-xs">
+							Trail Running Community
+						</p>
 					</div>
 				</div>
 
@@ -449,7 +449,9 @@ export default function ApplicationForm({
 					<ol className="space-y-1">
 						{STEP_LABELS.map((label, i) => {
 							const stepNum = i + 1
-							const isComplete = stepNum < currentStep || (stepNum < currentStep && isStepComplete(stepNum))
+							const isComplete =
+								stepNum < currentStep ||
+								(stepNum < currentStep && isStepComplete(stepNum))
 							const isCurrent = stepNum === currentStep
 							const isFuture = stepNum > currentStep
 
@@ -478,11 +480,7 @@ export default function ApplicationForm({
 														: 'border-border border'
 											}`}
 										>
-											{isComplete ? (
-												<Check className="h-3 w-3" />
-											) : (
-												stepNum
-											)}
+											{isComplete ? <Check className="h-3 w-3" /> : stepNum}
 										</span>
 										<span>{label}</span>
 									</button>
@@ -495,7 +493,7 @@ export default function ApplicationForm({
 				{/* Race badge */}
 				{formData.race && (
 					<div className="space-y-2">
-						<p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+						<p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 							Selected Race
 						</p>
 						<Badge variant="secondary" className="text-xs">
@@ -568,25 +566,25 @@ export default function ApplicationForm({
 						<h1 className="text-4xl leading-tight font-bold tracking-tight">
 							BIPOC Athlete Fund
 						</h1>
-					<p className="text-muted-foreground text-lg">
-						7 steps &middot; About 15 minutes
-					</p>
+						<p className="text-muted-foreground text-lg">
+							7 steps &middot; About 15 minutes
+						</p>
 					</div>
 
 					{/* Body */}
 					<div className="space-y-6 text-[15px] leading-relaxed">
 						<p>
-						Trail Running Community is a volunteer-run nonprofit led by people of
-						color. Every person in this organization &mdash; from program
+							Trail Running Community is a volunteer-run nonprofit led by people
+							of color. Every person in this organization &mdash; from program
 							leads to mentors &mdash; gives their time because they believe
 							trail running should belong to everyone.
 						</p>
 						<p>
 							When we invest in an athlete, we&apos;re investing in a
 							relationship. We cover your race entry, connect you with
-							mentorship, and bring you into community. In return, we ask you
-							to show up &mdash; not just on race day, but for the people and
-							the work that make this possible.
+							mentorship, and bring you into community. In return, we ask you to
+							show up &mdash; not just on race day, but for the people and the
+							work that make this possible.
 						</p>
 					</div>
 
@@ -594,19 +592,19 @@ export default function ApplicationForm({
 
 					{/* What to expect */}
 					<div className="space-y-4">
-						<h2 className="text-sm font-semibold uppercase tracking-wide">
+						<h2 className="text-sm font-semibold tracking-wide uppercase">
 							What to expect
 						</h2>
 						<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-						{[
-							{ label: 'About you', step: 'Step 1' },
-							{ label: 'Choose your race', step: 'Step 2' },
-							{ label: 'Your story', step: 'Step 3' },
-							{ label: 'Why this race matters', step: 'Step 4' },
-							{ label: "How you'll give back", step: 'Step 5' },
-							{ label: 'Mentorship', step: 'Step 6' },
-							{ label: 'Review and submit', step: 'Step 7' },
-						].map((item) => (
+							{[
+								{ label: 'About you', step: 'Step 1' },
+								{ label: 'Choose your race', step: 'Step 2' },
+								{ label: 'Your story', step: 'Step 3' },
+								{ label: 'Why this race matters', step: 'Step 4' },
+								{ label: "How you'll give back", step: 'Step 5' },
+								{ label: 'Mentorship', step: 'Step 6' },
+								{ label: 'Review and submit', step: 'Step 7' },
+							].map((item) => (
 								<div
 									key={item.step}
 									className="flex items-center gap-3 rounded-lg border px-4 py-3"
@@ -620,13 +618,27 @@ export default function ApplicationForm({
 						</div>
 					</div>
 
-					<ContextCard variant="highlight">
-						<p className="font-medium">
-							Most questions require a few thoughtful sentences &mdash; not a
-							single line. Set aside about 15 uninterrupted minutes. Your
-							progress is saved automatically.
-						</p>
-					</ContextCard>
+					{canStartApplication ? (
+						<ContextCard variant="highlight">
+							<p className="font-medium">
+								Most questions require a few thoughtful sentences &mdash; not a
+								single line. Set aside about 15 uninterrupted minutes. Your
+								progress is saved automatically.
+							</p>
+						</ContextCard>
+					) : (
+						<ContextCard>
+							<p className="font-medium">
+								You have already submitted an application in the current
+								six-month window.
+							</p>
+							<p className="text-muted-foreground mt-2 text-sm">
+								Check your dashboard for status updates. If an admin has
+								exempted your account from the limit, refresh this page and try
+								again.
+							</p>
+						</ContextCard>
+					)}
 
 					{/* CTA */}
 					<div className="flex items-center justify-between pt-2">
@@ -637,6 +649,7 @@ export default function ApplicationForm({
 						</div>
 						<Button
 							onClick={() => setStarted(true)}
+							disabled={!canStartApplication}
 							size="lg"
 							className="gap-2 px-8"
 						>
@@ -667,13 +680,21 @@ export default function ApplicationForm({
 								Do you identify as a person of color?
 							</legend>
 							<p className="text-muted-foreground text-sm">
-								The BIPOC Athlete Fund is designed specifically to support Black,
-								Indigenous, and people of color in trail running.
+								The BIPOC Athlete Fund is designed specifically to support
+								Black, Indigenous, and people of color in trail running.
 							</p>
 							<div className="grid grid-cols-2 gap-3">
 								{[
-									{ value: 'yes', label: 'Yes', desc: 'I identify as a person of color' },
-									{ value: 'no', label: 'No', desc: 'I do not identify as a person of color' },
+									{
+										value: 'yes',
+										label: 'Yes',
+										desc: 'I identify as a person of color',
+									},
+									{
+										value: 'no',
+										label: 'No',
+										desc: 'I do not identify as a person of color',
+									},
 								].map((option) => (
 									<label
 										key={option.value}
@@ -688,7 +709,9 @@ export default function ApplicationForm({
 											name="bipocIdentity"
 											value={option.value}
 											checked={formData.bipocIdentity === option.value}
-											onChange={(e) => updateField('bipocIdentity', e.target.value)}
+											onChange={(e) =>
+												updateField('bipocIdentity', e.target.value)
+											}
 											className="sr-only"
 										/>
 										<span className="font-medium">{option.label}</span>
@@ -747,7 +770,9 @@ export default function ApplicationForm({
 								)}
 							</div>
 							<div className="space-y-2">
-								<QuestionLabel htmlFor="zipcode">ZIP / Postal code</QuestionLabel>
+								<QuestionLabel htmlFor="zipcode">
+									ZIP / Postal code
+								</QuestionLabel>
 								<input
 									id="zipcode"
 									type="text"
@@ -804,9 +829,7 @@ export default function ApplicationForm({
 									raceOptions={raceOptions}
 									appliedRaces={applicationStatus.appliedRaces}
 									selectedRace={formData.race}
-									onRaceSelectAction={(race) =>
-										updateField('race', race)
-									}
+									onRaceSelectAction={(race) => updateField('race', race)}
 								/>
 							</div>
 							{searchParams.get('race') && formData.race && (
@@ -818,8 +841,7 @@ export default function ApplicationForm({
 									<div className="flex items-center gap-2">
 										<Check className="h-4 w-4 text-green-600" />
 										<span>
-											<strong>Race preselected:</strong>{' '}
-											{formData.race}
+											<strong>Race preselected:</strong> {formData.race}
 										</span>
 									</div>
 									<p className="mt-1 text-xs text-green-600">
@@ -861,9 +883,7 @@ export default function ApplicationForm({
 											name="firstRace"
 											value={option.value}
 											checked={formData.firstRace === option.value}
-											onChange={(e) =>
-												updateField('firstRace', e.target.value)
-											}
+											onChange={(e) => updateField('firstRace', e.target.value)}
 											className="sr-only"
 										/>
 										<span className="font-medium">{option.label}</span>
@@ -951,10 +971,10 @@ export default function ApplicationForm({
 					<div className="space-y-10">
 						<ContextCard>
 							<p>
-								We partner with specific races because they share our values.
-								We want to understand your connection to this one &mdash; not
-								just that you need funding, but why this race, at this moment
-								in your life.
+								We partner with specific races because they share our values. We
+								want to understand your connection to this one &mdash; not just
+								that you need funding, but why this race, at this moment in your
+								life.
 							</p>
 						</ContextCard>
 
@@ -992,8 +1012,8 @@ export default function ApplicationForm({
 					<div className="space-y-10">
 						<ContextCard variant="highlight">
 							<p>
-								Trail Running Community is built on mutual investment. Everyone in this
-								community &mdash; athletes, mentors, volunteers &mdash;
+								Trail Running Community is built on mutual investment. Everyone
+								in this community &mdash; athletes, mentors, volunteers &mdash;
 								contributes their time, energy, and care. When we cover your
 								race entry, we&apos;re betting that the experience won&apos;t
 								end at the finish line.
@@ -1006,8 +1026,8 @@ export default function ApplicationForm({
 
 						<div className="space-y-3">
 							<QuestionLabel htmlFor="communityContribution">
-								How do you see this experience creating a ripple &mdash; in
-								your life, your community, and in trail running?
+								How do you see this experience creating a ripple &mdash; in your
+								life, your community, and in trail running?
 							</QuestionLabel>
 							<Textarea
 								id="communityContribution"
@@ -1050,10 +1070,10 @@ export default function ApplicationForm({
 							</div>
 							<div className="space-y-3 text-[15px] leading-relaxed">
 								<p>
-									Our mentorship program pairs you with an experienced
-									athlete for regular check-ins leading up to race day.
-									This isn&apos;t coaching &mdash; it&apos;s a steady
-									relationship with someone who&apos;s been where you are.
+									Our mentorship program pairs you with an experienced athlete
+									for regular check-ins leading up to race day. This isn&apos;t
+									coaching &mdash; it&apos;s a steady relationship with someone
+									who&apos;s been where you are.
 								</p>
 								<p>
 									The real magic of Trail Running Community happens in these
@@ -1063,9 +1083,9 @@ export default function ApplicationForm({
 									minutes. You&apos;ll decide the cadence and style together.
 								</p>
 								<p className="font-medium">
-									Mentorship isn&apos;t required, but we prioritize athletes
-									who want this connection. Some of our strongest community
-									members started as mentees.
+									Mentorship isn&apos;t required, but we prioritize athletes who
+									want this connection. Some of our strongest community members
+									started as mentees.
 								</p>
 							</div>
 						</div>
@@ -1153,10 +1173,7 @@ export default function ApplicationForm({
 										id="tierraLibreContribution"
 										value={formData.tierraLibreContribution}
 										onChange={(e) =>
-											updateField(
-												'tierraLibreContribution',
-												e.target.value,
-											)
+											updateField('tierraLibreContribution', e.target.value)
 										}
 										rows={6}
 										required
@@ -1208,10 +1225,7 @@ export default function ApplicationForm({
 
 						{/* Other support */}
 						<div className="space-y-3 border-t pt-8">
-							<label
-								htmlFor="needsAssistance"
-								className="text-lg font-medium"
-							>
+							<label htmlFor="needsAssistance" className="text-lg font-medium">
 								Is there anything else we can help with beyond race entry?
 							</label>
 							<p className="text-muted-foreground text-sm">
@@ -1221,9 +1235,7 @@ export default function ApplicationForm({
 							<Textarea
 								id="needsAssistance"
 								value={formData.needsAssistance}
-								onChange={(e) =>
-									updateField('needsAssistance', e.target.value)
-								}
+								onChange={(e) => updateField('needsAssistance', e.target.value)}
 								rows={3}
 								maxLength={CHAR_MAX_SHORT}
 								className="text-[15px] leading-relaxed"
@@ -1261,25 +1273,25 @@ export default function ApplicationForm({
 						{/* Quick facts */}
 						<div className="grid grid-cols-2 gap-4 rounded-lg border p-5">
 							<div>
-								<p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+								<p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 									Name
 								</p>
 								<p className="mt-1 text-sm font-medium">{userData.name}</p>
 							</div>
 							<div>
-								<p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+								<p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 									Email
 								</p>
 								<p className="mt-1 text-sm font-medium">{userData.email}</p>
 							</div>
 							<div>
-								<p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+								<p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 									Race
 								</p>
 								<p className="mt-1 text-sm font-medium">{formData.race}</p>
 							</div>
 							<div>
-								<p className="text-muted-foreground text-xs font-medium uppercase tracking-wide">
+								<p className="text-muted-foreground text-xs font-medium tracking-wide uppercase">
 									First trail race
 								</p>
 								<p className="mt-1 text-sm font-medium">
@@ -1301,7 +1313,7 @@ export default function ApplicationForm({
 										Edit
 									</button>
 								</div>
-								<p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
+								<p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
 									{section.content}
 								</p>
 							</div>
@@ -1323,9 +1335,7 @@ export default function ApplicationForm({
 								<div className="flex items-center gap-2">
 									<Badge
 										variant={
-											formData.wantsMentor === 'yes'
-												? 'default'
-												: 'secondary'
+											formData.wantsMentor === 'yes' ? 'default' : 'secondary'
 										}
 									>
 										{formData.wantsMentor === 'yes'
@@ -1343,7 +1353,7 @@ export default function ApplicationForm({
 								</div>
 								{formData.wantsMentor === 'yes' &&
 									formData.tierraLibreContribution && (
-										<p className="text-muted-foreground mt-2 whitespace-pre-wrap leading-relaxed">
+										<p className="text-muted-foreground mt-2 leading-relaxed whitespace-pre-wrap">
 											{formData.tierraLibreContribution}
 										</p>
 									)}
@@ -1353,7 +1363,7 @@ export default function ApplicationForm({
 						{formData.needsAssistance && (
 							<div className="rounded-lg border p-5">
 								<h4 className="mb-2 text-sm font-semibold">Other Support</h4>
-								<p className="text-muted-foreground whitespace-pre-wrap text-sm leading-relaxed">
+								<p className="text-muted-foreground text-sm leading-relaxed whitespace-pre-wrap">
 									{formData.needsAssistance}
 								</p>
 							</div>

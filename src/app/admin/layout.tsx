@@ -41,11 +41,10 @@ export default async function AdminLayout({
 		<div className="min-h-screen">
 			<div className="fixed inset-y-0 left-0 z-10 w-56 border-r pt-16">
 				<nav className="space-y-1 p-4">
-					<p className="text-muted-foreground mb-3 px-3 text-xs font-medium uppercase tracking-wider">
+					<p className="text-muted-foreground mb-3 px-3 text-xs font-medium tracking-wider uppercase">
 						Admin
 					</p>
 					<NavLink href="/admin/applications">Applications</NavLink>
-					<NavLink href="/admin/active">Active Athletes</NavLink>
 					<NavLink href="/admin/users">Users</NavLink>
 				</nav>
 			</div>

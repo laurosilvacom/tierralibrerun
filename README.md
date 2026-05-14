@@ -1,7 +1,7 @@
 # Trail Running Community Platform
 
-An open-source application for managing community-led trail running
-programs. Powers race funding, mentor matching, and event coordination.
+An open-source application for managing community-led trail running programs.
+Powers a focused athlete fund application workflow.
 
 Built by [Tierra Libre Run](https://tierralibre.run) — a BIPOC-led nonprofit
 building access to trail running.
@@ -14,57 +14,53 @@ building access to trail running.
 
 ### Athlete features
 
-- **Race funding** — Apply for entry fee assistance. Track application status from submission through registration.
-- **Mentorship** — Get paired with a mentor based on preferences and needs.
-- **Events** — Browse community runs and events. RSVP with custom event questions.
-- **Onboarding** — Guided signup flow with social media and platform integration.
+- **Race funding** — Apply for entry fee assistance and track application
+  status.
+- **Simple account flow** — Clerk handles authentication; Convex creates the app
+  user record lazily.
 
 ### Admin features
 
-- **Application review** — Multi-stage workflow for fund and mentor applications with audit tracking.
-- **Pairing studio** — Match mentors to athletes with automated introduction emails.
-- **Email system** — Send templated and custom emails with full logging and brand formatting.
-- **User management** — Role-based access control, application history, and funding overrides.
+- **Application review** — Review pending fund applications and approve or deny
+  them.
+- **Active fund view** — Filter approved athletes from the applications console.
+- **User management** — Role-based access control, application history, and
+  funding limit overrides.
 
 ### For forked instances
 
-- **Branding via environment variables** — Configure site name, tagline, social links, email, and tax ID without code changes.
-- **Sanity CMS** — Manage races, blog posts, events, and staff profiles in a headless CMS.
-- **Production deployment** — Pre-configured for Clerk auth, PlanetScale database, Resend email, and Vercel hosting.
+- **Branding via environment variables** — Configure site name, tagline, social
+  links, email, and tax ID without code changes.
+- **Sanity CMS** — Manage races, blog posts, companies, and page content in a
+  headless CMS.
+- **Production deployment** — Pre-configured for Clerk auth, Convex, Sanity, and
+  Vercel hosting.
 
 ## Tech stack
 
-| Layer      | Technology                                   |
-| ---------- | -------------------------------------------- |
-| Framework  | Next.js 16 (App Router, Server Actions)      |
-| Language   | TypeScript                                   |
-| Auth       | Clerk (JWT, middleware, role metadata)       |
-| Database   | PlanetScale (MySQL) + Drizzle ORM            |
-| CMS        | Sanity + GROQ queries                        |
-| Email      | Resend                                       |
-| UI         | Tailwind CSS + shadcn/ui + Radix primitives  |
-| Deployment | Vercel                                       |
+| Layer      | Technology                                  |
+| ---------- | ------------------------------------------- |
+| Framework  | Next.js 16 (App Router, Server Actions)     |
+| Language   | TypeScript                                  |
+| Auth       | Clerk (JWT, middleware, role metadata)      |
+| Database   | Convex                                      |
+| CMS        | Sanity + GROQ queries                       |
+| UI         | Tailwind CSS + shadcn/ui + Radix primitives |
+| Deployment | Vercel                                      |
 
 ## Project structure
 
 ```
-├── drizzle/               SQL migrations (Drizzle Kit)
+├── convex/                Convex schema, queries, and mutations
 ├── sanity/                Sanity Studio config
 ├── src/
 │   ├── app/               Routes, layouts, metadata
 │   │   ├── admin/         Operations console
-│   │   ├── api/           Webhooks, RSVPs, admin endpoints
 │   │   ├── fund/          Athlete fund application flow
-│   │   ├── mentor/        Mentor application flow
-│   │   ├── events/        Event pages with RSVP
 │   │   ├── blog/          Community stories (Sanity-powered)
-│   │   ├── dashboard/     Athlete home base
-│   │   └── onboarding/    Welcome flow
+│   │   └── dashboard/     Athlete home base
 │   ├── components/        UI primitives + layout
-│   ├── lib/               Config, email, metadata, services
-│   │   ├── config/site.ts All brand configuration
-│   │   └── email/         Orchestrator, templates, brand links
-│   └── server/            Auth, database, server actions
+│   └── lib/               Config, metadata, Sanity, and routing helpers
 └── .env.local.example     Every env var with descriptions
 ```
 
@@ -74,7 +70,8 @@ building access to trail running.
 
 - Node.js 18.18+
 - pnpm 8+
-- Accounts: [Clerk](https://clerk.com), [PlanetScale](https://planetscale.com), [Sanity](https://sanity.io), [Resend](https://resend.com)
+- Accounts: [Clerk](https://clerk.com), [Convex](https://convex.dev),
+  [Sanity](https://sanity.io)
 
 ### Installation
 
@@ -85,10 +82,10 @@ pnpm install
 cp .env.local.example .env.local
 ```
 
-Fill in `.env.local` using [docs/ENVIRONMENT.md](docs/ENVIRONMENT.md), then run:
+Fill in `.env.local`, then run:
 
 ```bash
-pnpm db:push    # sync database schema
+pnpm convex:dev # provision/sync your Convex dev deployment
 pnpm dev        # start dev server at localhost:3000
 ```
 
@@ -114,38 +111,30 @@ See [.env.local.example](.env.local.example) for all options.
 ### Fund application lifecycle
 
 ```
-SUBMITTED → IN_REVIEW → AWAITING_CONFIRMATION → CONFIRMED
-→ REGISTRATION_IN_PROGRESS → REGISTERED → ONBOARDING_IN_PROGRESS
-→ ACTIVE_IN_PROGRAM → CLOSED
+PENDING → APPROVED
+PENDING → DENIED
 ```
 
-All state transitions are logged with actor, timestamp, and payload.
-
-### Mentor matching
-
-```
-SUBMITTED → IN_REVIEW → APPROVED_POOL → MATCH_PENDING → MATCHED → ACTIVE
-```
-
-Admins pair mentors to athletes through the pairing studio. Introduction emails are sent automatically.
+The Convex model intentionally keeps only the status needed for the minimal
+athlete fund workflow.
 
 ## npm scripts
 
-| Command            | Purpose                    |
-| ------------------ | -------------------------- |
-| `pnpm dev`         | Dev server (Turbopack)     |
-| `pnpm build`       | Production build           |
-| `pnpm lint`        | ESLint                     |
-| `pnpm type-check`  | TypeScript validation      |
-| `pnpm format`      | Prettier                   |
-| `pnpm precommit`   | Type-check + lint + format |
-| `pnpm db:push`     | Sync schema to database    |
-| `pnpm db:studio`   | Open Drizzle Studio        |
-| `pnpm db:generate` | Generate migration SQL     |
+| Command              | Purpose                    |
+| -------------------- | -------------------------- |
+| `pnpm dev`           | Dev server (Turbopack)     |
+| `pnpm build`         | Production build           |
+| `pnpm lint`          | ESLint                     |
+| `pnpm type-check`    | TypeScript validation      |
+| `pnpm format`        | Prettier                   |
+| `pnpm precommit`     | Type-check + lint + format |
+| `pnpm convex:dev`    | Convex dev deployment      |
+| `pnpm convex:deploy` | Deploy Convex functions    |
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow guidelines. All interactions must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
+See [CONTRIBUTING.md](CONTRIBUTING.md) for workflow guidelines. All interactions
+must adhere to the [Code of Conduct](CODE_OF_CONDUCT.md).
 
 Security issues should be reported privately — see [SECURITY.md](SECURITY.md).
 

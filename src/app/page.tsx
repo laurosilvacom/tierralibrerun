@@ -13,7 +13,7 @@ export default async function Home() {
 
 	return (
 		<main className="text-foreground">
-			{/* Hero Section - Matches fund/mentor/donate page pattern */}
+			{/* Hero Section */}
 			<section className="bg-primary text-primary-foreground relative overflow-hidden">
 				<div className="container mx-auto px-6 md:px-8 lg:px-12">
 					<div className="grid items-center gap-16 py-24 md:gap-20 md:py-36 lg:min-h-[90vh] lg:grid-cols-12 lg:gap-24 lg:py-40">
@@ -36,7 +36,9 @@ export default async function Home() {
 									className="text-primary-foreground/90 animate-fade-in-up text-xl leading-relaxed md:text-2xl"
 									style={{ animationDelay: '0.3s', animationFillMode: 'both' }}
 								>
-									Tierra Libre Run funds race entries and pairs runners of color with experienced mentors. Everything we build is organized around a single, concrete goal: your trail race.
+									Tierra Libre Run funds race entries for runners of color.
+									Everything we build is organized around a single, concrete
+									goal: your trail race.
 								</p>
 								<div
 									className="animate-fade-in-up flex flex-col gap-4 pt-2 sm:flex-row sm:gap-4"
@@ -127,18 +129,23 @@ export default async function Home() {
 							</div>
 							<div className="space-y-7">
 								<p className="text-muted-foreground text-lg leading-[1.7] md:text-xl md:leading-[1.7]">
-									Trail running is built around a specific moment: the race. A date on the calendar. A distance. A start line and a finish line.
+									Trail running is built around a specific moment: the race. A
+									date on the calendar. A distance. A start line and a finish
+									line.
 								</p>
 								<p className="text-muted-foreground text-lg leading-[1.7] md:text-xl md:leading-[1.7]">
 									Tierra Libre Run is a nonprofit initiative{' '}
 									<strong className="text-foreground font-semibold">
 										created and led by people of color.
-									</strong>
-									{' '}We organize our work around that race moment: funded entry, matched mentor, community at the aid station. Everything with a clear start and a clear finish.
+									</strong>{' '}
+									We organize our work around that race moment: funded entry,
+									community support, and a clear path to the start line.
 								</p>
 								<blockquote className="border-primary bg-primary/10 rounded-r-2xl border-l-4 py-4 pl-6">
 									<p className="text-foreground text-lg italic md:text-xl">
-										"We are not a run club. We are not a collective. We are trail access infrastructure, built to be precise, durable, and led by the communities we serve."
+										"We are not a run club. We are not a collective. We are
+										trail access infrastructure, built to be precise, durable,
+										and led by the communities we serve."
 									</p>
 								</blockquote>
 							</div>
@@ -155,10 +162,12 @@ export default async function Home() {
 							OUR PROGRAMS
 						</span>
 						<h2 className="mb-8 text-4xl font-bold md:text-5xl lg:text-6xl">
-							Two Programs. One Goal.
+							One Fund. One Goal.
 						</h2>
 						<p className="text-primary-foreground/90 max-w-3xl text-lg leading-relaxed md:text-xl">
-							The Athlete Fund and Mentor Program are built to work together, removing the financial barrier and pairing every funded athlete with someone who has been there before.
+							The Athlete Fund removes the financial barrier between an athlete
+							and a race entry, then keeps the application path simple enough to
+							operate well.
 						</p>
 					</div>
 
@@ -188,7 +197,8 @@ export default async function Home() {
 											Your Race Entry. Covered.
 										</h3>
 										<p className="mb-6 max-w-2xl text-base leading-relaxed text-white/90 md:text-lg">
-											Select a race from our partner network and apply. If accepted, we cover your registration fee entirely.
+											Select a race from our partner network and apply. If
+											accepted, we cover your registration fee entirely.
 										</p>
 										<Button
 											variant="outline"
@@ -207,12 +217,12 @@ export default async function Home() {
 						</div>
 					</div>
 
-					{/* Program 2 - Mentor Program */}
+					{/* Support Program */}
 					<div className="group relative overflow-hidden rounded-3xl">
 						<div className="relative h-[50vh] lg:h-[65vh]">
 							<Image
 								src="https://cdn.sanity.io/images/qgy6qhm1/production/8f204f7b8f37ee12ebb64459a82b1ce3f68ed25f-768x1024.jpg"
-								alt="Mentorship Program"
+								alt="Tierra Libre community support"
 								fill
 								loading="lazy"
 								quality={85}
@@ -225,14 +235,16 @@ export default async function Home() {
 									<div className="mb-4 inline-flex items-center gap-3 rounded-full bg-white/20 px-4 py-2 backdrop-blur-sm">
 										<Users className="h-4 w-4 text-white" />
 										<span className="text-xs font-bold tracking-wider text-white uppercase">
-											Mentor Program
+											Community Support
 										</span>
 									</div>
 									<h3 className="mb-3 text-xl leading-tight font-bold text-white md:text-2xl">
-										Someone Who Has Been There.
+										Support Around the Race.
 									</h3>
 									<p className="mb-4 max-w-2xl text-sm leading-relaxed text-white/90 md:text-base">
-										Every funded athlete is paired with an experienced mentor of color who has been there before and is ready to help you get to the finish line.
+										Funded athletes are not just records in a queue. We keep the
+										operational focus on getting each person from application to
+										race day.
 									</p>
 									<Button
 										variant="outline"
@@ -240,7 +252,7 @@ export default async function Home() {
 										className="border-white/30 bg-transparent text-white hover:bg-white hover:text-black"
 										asChild
 									>
-										<Link href="/mentor">About the Mentor Program</Link>
+										<Link href="/fund">Apply for Race Entry</Link>
 									</Button>
 								</div>
 							</div>
@@ -260,7 +272,9 @@ export default async function Home() {
 							The Network Behind the Work
 						</h2>
 						<p className="text-muted-foreground mx-auto max-w-2xl text-lg">
-							Race directors and brand partners who share our commitment to expanding access and making space for runners of color in trail running.
+							Race directors and brand partners who share our commitment to
+							expanding access and making space for runners of color in trail
+							running.
 						</p>
 					</div>
 
@@ -298,11 +312,16 @@ export default async function Home() {
 									Partner with us.
 								</h3>
 								<p className="text-primary-foreground/80 text-lg leading-relaxed md:text-xl">
-									Race directors: offer supported entries through the Athlete Fund. Brands: co-fund access and reach a community that is new to the sport and here to stay. We build the infrastructure. Together, we expand it.
+									Race directors: offer supported entries through the Athlete
+									Fund. Brands: co-fund access and reach a community that is new
+									to the sport and here to stay. We build the infrastructure.
+									Together, we expand it.
 								</p>
 							</div>
 							<div className="flex justify-start lg:justify-end">
-								<a href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'team@tierralibre.run'}?subject=Partnership%20Inquiry`}>
+								<a
+									href={`mailto:${process.env.NEXT_PUBLIC_CONTACT_EMAIL || 'team@tierralibre.run'}?subject=Partnership%20Inquiry`}
+								>
 									<Button size="lg" variant="outline" className="text-lg">
 										Get In Touch
 										<ArrowRight className="ml-2 h-5 w-5" />

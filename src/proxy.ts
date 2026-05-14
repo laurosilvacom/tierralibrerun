@@ -21,6 +21,8 @@ const isPublicRoute = createRouteMatcher([
 	'/hyak',
 	'/races(.*)',
 	'/fund',
+	'/fund/apply(.*)',
+	'/mentor',
 	'/code-of-conduct',
 	'/companies(.*)',
 	'/privacy-policy',
@@ -28,6 +30,7 @@ const isPublicRoute = createRouteMatcher([
 
 	// Post-signup redirect bridge
 	'/new-user',
+	'/onboarding',
 
 	// Sanity Studio (has its own auth)
 	'/studio(.*)',

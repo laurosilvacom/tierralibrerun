@@ -35,7 +35,7 @@ export const siteConfig = {
 	/** One-sentence description used in metadata */
 	description: normalizeEnvString(
 		process.env.NEXT_PUBLIC_SITE_DESCRIPTION,
-		'Tierra Libre Run is a nonprofit initiative that funds race entries and provides mentorship for runners of color entering trail running. Everything built around the trail race experience.',
+		'Tierra Libre Run is a nonprofit initiative that funds race entries for runners of color entering trail running. Everything is built around the trail race experience.',
 	),
 
 	/** Canonical site URL */
@@ -46,7 +46,7 @@ export const siteConfig = {
 
 	/** Keywords for SEO */
 	keywords:
-		'trail running, runners of color, race funding, mentorship, nonprofit, trail access, underrepresented communities, outdoor access',
+		'trail running, runners of color, race funding, nonprofit, trail access, underrepresented communities, outdoor access',
 
 	/** Locale */
 	locale: 'en_US',
@@ -65,7 +65,10 @@ export const siteConfig = {
 	 * Set NEXT_PUBLIC_DEFAULT_OG_IMAGE to your own Sanity CDN image URL.
 	 * Falls back to empty string (no OG image) if not set.
 	 */
-	defaultOgImage: normalizeEnvString(process.env.NEXT_PUBLIC_DEFAULT_OG_IMAGE, ''),
+	defaultOgImage: normalizeEnvString(
+		process.env.NEXT_PUBLIC_DEFAULT_OG_IMAGE,
+		'',
+	),
 } as const
 
 export const socialConfig = {

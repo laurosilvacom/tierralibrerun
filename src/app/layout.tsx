@@ -119,6 +119,11 @@ export const viewport: Viewport = {
 const cx = (...classes: (string | false | null | undefined)[]) =>
 	classes.filter(Boolean).join(' ')
 
+function safeClerkFallback(value: string | undefined, fallback: string) {
+	if (!value || value === '/onboarding') return fallback
+	return value
+}
+
 export default function RootLayout({
 	children,
 	modal,
@@ -127,12 +132,14 @@ export default function RootLayout({
 	modal: React.ReactNode
 }>) {
 	const baseUrl = siteConfig.url
-	const signInFallbackRedirectUrl =
-		env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL ??
-		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL
-	const signUpFallbackRedirectUrl =
-		env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL ??
-		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL
+	const signInFallbackRedirectUrl = safeClerkFallback(
+		env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL,
+		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,
+	)
+	const signUpFallbackRedirectUrl = safeClerkFallback(
+		env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL,
+		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL,
+	)
 
 	const socialLinks = [socialConfig.instagram, socialConfig.twitter].filter(
 		Boolean,
@@ -221,7 +228,6 @@ export default function RootLayout({
 					<SpeedInsights />
 				</body>
 			</html>
-
 		</ClerkProvider>
 	)
 }

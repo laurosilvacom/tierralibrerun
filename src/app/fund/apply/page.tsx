@@ -17,7 +17,9 @@ export const metadata = {
 
 export default async function ApplyPage() {
 	const user = await currentUser()
-	if (!user) redirect('/?auth=sign-in')
+	if (!user) {
+		redirect(`/?auth=sign-in&redirect_url=${encodeURIComponent('/fund/apply')}`)
+	}
 
 	const { getToken } = await auth()
 	const token = await getToken({ template: 'convex' })
