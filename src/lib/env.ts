@@ -2,7 +2,15 @@ import { z } from 'zod'
 
 const envSchema = z.object({
 	// Convex
-	NEXT_PUBLIC_CONVEX_URL: z.string().min(1, 'Convex URL is required'),
+	/**
+	 * Convex injects this for the Next build through vercel.json:
+	 * `npx convex deploy --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL`.
+	 *
+	 * It is intentionally optional here because this module can be evaluated by
+	 * Vercel server functions at request time, where build-only public variables
+	 * are not guaranteed to exist in process.env.
+	 */
+	NEXT_PUBLIC_CONVEX_URL: z.string().optional(),
 	CONVEX_DEPLOYMENT: z.string().optional(),
 
 	// Clerk Auth

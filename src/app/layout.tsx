@@ -8,7 +8,6 @@ import { ConvexClientProvider } from '@/components/convex-provider'
 import { Footer } from '@/components/site-footer'
 import { Header } from '@/components/site-header'
 import { ThemeProvider } from '@/components/theme-provider'
-import { env } from '@/lib/env'
 import { siteConfig, socialConfig } from '@/lib/site'
 import '@/styles/globals.css'
 
@@ -124,6 +123,33 @@ function safeClerkFallback(value: string | undefined, fallback: string) {
 	return value
 }
 
+function getClerkRedirectEnv() {
+	const signInFallbackRedirectUrl = safeClerkFallback(
+		process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL,
+		process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL ?? '/dashboard',
+	)
+	const signUpFallbackRedirectUrl = safeClerkFallback(
+		process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL,
+		process.env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL ?? '/new-user',
+	)
+
+	const configuredForceRedirects = [
+		process.env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL,
+		process.env.NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL,
+	].filter(
+		(value): value is string =>
+			typeof value === 'string' && value.trim().length > 0,
+	)
+
+	if (configuredForceRedirects.length > 0) {
+		console.warn(
+			'Clerk force redirect URLs are configured. This app uses per-flow Clerk redirects in the UI so athlete fund application intent survives sign-up; remove NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL and NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL to avoid overriding those routes globally.',
+		)
+	}
+
+	return { signInFallbackRedirectUrl, signUpFallbackRedirectUrl }
+}
+
 export default function RootLayout({
 	children,
 	modal,
@@ -132,14 +158,8 @@ export default function RootLayout({
 	modal: React.ReactNode
 }>) {
 	const baseUrl = siteConfig.url
-	const signInFallbackRedirectUrl = safeClerkFallback(
-		env.NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL,
-		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_IN_URL,
-	)
-	const signUpFallbackRedirectUrl = safeClerkFallback(
-		env.NEXT_PUBLIC_CLERK_SIGN_UP_FALLBACK_REDIRECT_URL,
-		env.NEXT_PUBLIC_CLERK_AFTER_SIGN_UP_URL,
-	)
+	const { signInFallbackRedirectUrl, signUpFallbackRedirectUrl } =
+		getClerkRedirectEnv()
 
 	const socialLinks = [socialConfig.instagram, socialConfig.twitter].filter(
 		Boolean,

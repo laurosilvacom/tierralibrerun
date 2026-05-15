@@ -68,7 +68,7 @@ building access to trail running.
 
 ### Requirements
 
-- Node.js 18.18+
+- Node.js 22.x
 - pnpm 8+
 - Accounts: [Clerk](https://clerk.com), [Convex](https://convex.dev),
   [Sanity](https://sanity.io)

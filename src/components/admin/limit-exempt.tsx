@@ -6,7 +6,7 @@ import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Switch } from '@/components/ui/switch'
 import { api } from '@/convex/_generated/api'
-import  { type Id } from '@/convex/_generated/dataModel'
+import { type Id } from '@/convex/_generated/dataModel'
 
 export function LimitExemptToggle({
 	userId,

@@ -4,7 +4,15 @@ import { useAuth } from '@clerk/nextjs'
 import { ConvexReactClient } from 'convex/react'
 import { ConvexProviderWithClerk } from 'convex/react-clerk'
 
-const convex = new ConvexReactClient(process.env.NEXT_PUBLIC_CONVEX_URL!)
+const convexUrl = process.env.NEXT_PUBLIC_CONVEX_URL
+
+if (!convexUrl && typeof window !== 'undefined') {
+	throw new Error('Missing NEXT_PUBLIC_CONVEX_URL')
+}
+
+const convex = new ConvexReactClient(
+	convexUrl ?? 'https://placeholder.convex.cloud',
+)
 
 export function ConvexClientProvider({
 	children,

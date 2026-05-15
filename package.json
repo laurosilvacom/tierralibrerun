@@ -20,6 +20,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "type-check": "tsc --noEmit",
+    "test:server-env": "tsx scripts/assert-server-layout-env.ts",
     "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,css,scss,md,mjs}\"",
     "format:check": "prettier --check \"**/*.{js,jsx,ts,tsx,json,css,scss,md,mjs}\"",
     "convex:dev": "pnpm convex dev",
@@ -98,7 +99,7 @@
     "typescript": "^5.9.3"
   },
   "engines": {
-    "node": ">=18.18.0"
+    "node": "22.x"
   },
   "packageManager": "pnpm@10.12.4"
 }
