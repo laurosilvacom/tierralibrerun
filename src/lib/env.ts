@@ -1,23 +1,35 @@
 import { z } from 'zod'
 
+/**
+ * Strip surrounding whitespace (including embedded \r/\n that Vercel sometimes
+ * stores when env values are added via copy-paste or piped from `echo`).
+ *
+ * The validator below should never throw at runtime — corrupted env values
+ * crash the entire serverless function on first import, including for users
+ * who only need a layout to render. Trim aggressively, fall back to defaults,
+ * and log instead of throwing.
+ */
+function trimEnv() {
+	const out: Record<string, string | undefined> = {}
+	for (const [key, value] of Object.entries(process.env)) {
+		if (typeof value === 'string') {
+			out[key] = value.replace(/[\r\n]+/g, '').trim()
+		} else {
+			out[key] = value
+		}
+	}
+	return out
+}
+
 const envSchema = z.object({
-	// Convex
-	/**
-	 * Convex injects this for the Next build through vercel.json:
-	 * `npx convex deploy --cmd-url-env-var-name NEXT_PUBLIC_CONVEX_URL`.
-	 *
-	 * It is intentionally optional here because this module can be evaluated by
-	 * Vercel server functions at request time, where build-only public variables
-	 * are not guaranteed to exist in process.env.
-	 */
+	// Convex — injected by `npx convex deploy --cmd-url-env-var-name` at build
+	// time, not present in the runtime serverless function env.
 	NEXT_PUBLIC_CONVEX_URL: z.string().optional(),
 	CONVEX_DEPLOYMENT: z.string().optional(),
 
 	// Clerk Auth
-	NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z
-		.string()
-		.min(1, 'Clerk publishable key is required'),
-	CLERK_SECRET_KEY: z.string().min(1, 'Clerk secret key is required'),
+	NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY: z.string().optional(),
+	CLERK_SECRET_KEY: z.string().optional(),
 	NEXT_PUBLIC_CLERK_SIGN_IN_URL: z.string().default('/?auth=sign-in'),
 	NEXT_PUBLIC_CLERK_SIGN_UP_URL: z.string().default('/?auth=sign-up'),
 	NEXT_PUBLIC_CLERK_SIGN_IN_FALLBACK_REDIRECT_URL: z.string().optional(),
@@ -31,50 +43,34 @@ const envSchema = z.object({
 	NODE_ENV: z
 		.enum(['development', 'production', 'test'])
 		.default('development'),
-	NEXT_PUBLIC_APP_URL: z.string().url().default('http://localhost:3000'),
-	NEXT_PUBLIC_SITE_URL: z.string().url().default('http://localhost:3000'),
+	NEXT_PUBLIC_APP_URL: z.string().default('http://localhost:3000'),
+	NEXT_PUBLIC_SITE_URL: z.string().default('http://localhost:3000'),
 	GOOGLE_SITE_VERIFICATION: z.string().optional(),
 
 	// Sanity
-	NEXT_PUBLIC_SANITY_PROJECT_ID: z
-		.string()
-		.min(1, 'Sanity project ID is required'),
-	NEXT_PUBLIC_SANITY_DATASET: z.string().min(1, 'Sanity dataset is required'),
+	NEXT_PUBLIC_SANITY_PROJECT_ID: z.string().optional(),
+	NEXT_PUBLIC_SANITY_DATASET: z.string().optional(),
 	NEXT_PUBLIC_SANITY_API_VERSION: z.string().default('2025-06-01'),
 	SANITY_API_TOKEN: z.string().optional(),
 
-	// Email — transactional confirmations only
+	// Email
 	RESEND_API_KEY: z.string().optional(),
 
 	// Admin
 	ADMIN_EMAILS: z.string().optional(),
 })
 
-const envParse = envSchema.safeParse(process.env)
+const envParse = envSchema.safeParse(trimEnv())
 
 if (!envParse.success) {
-	console.error(
-		'❌ Invalid environment variables:',
+	console.warn(
+		'env.ts: zod parse returned issues; falling back to schema defaults.',
 		envParse.error.flatten().fieldErrors,
 	)
-	throw new Error('Invalid environment variables')
 }
 
-export const env = envParse.data
+export const env: z.infer<typeof envSchema> = envParse.success
+	? envParse.data
+	: envSchema.parse({})
 
-const configuredForceRedirects = [
-	env.NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL,
-	env.NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL,
-].filter(
-	(value): value is string =>
-		typeof value === 'string' && value.trim().length > 0,
-)
-
-if (configuredForceRedirects.length > 0) {
-	console.warn(
-		'Clerk force redirect URLs are configured. This app uses per-flow Clerk redirects in the UI so athlete fund application intent survives sign-up; remove NEXT_PUBLIC_CLERK_SIGN_IN_FORCE_REDIRECT_URL and NEXT_PUBLIC_CLERK_SIGN_UP_FORCE_REDIRECT_URL to avoid overriding those routes globally.',
-	)
-}
-
-// Type-safe environment variables
 export type Env = z.infer<typeof envSchema>
