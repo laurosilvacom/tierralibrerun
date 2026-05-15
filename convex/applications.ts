@@ -16,25 +16,19 @@ function definedFields<T extends Record<string, unknown>>(fields: T): Partial<T>
 
 // ─── Queries ────────────────────────────────────────────────────────────────
 
-/** Admin: paginated list of all applications regardless of status. */
+/**
+ * Admin: paginated list of all applications regardless of status.
+ * `name` and `email` are denormalized onto the application at submit time,
+ * so we never need to fetch the related user document for list rendering.
+ */
 export const listAll = query({
 	args: { paginationOpts: paginationOptsValidator },
 	handler: async (ctx, { paginationOpts }) => {
 		await requireAdminReader(ctx)
-
-		const page = await ctx.db
+		return await ctx.db
 			.query('fundApplications')
 			.order('desc')
 			.paginate(paginationOpts)
-
-		const items = await Promise.all(
-			page.page.map(async (app) => {
-				const user = await ctx.db.get(app.userId)
-				return { ...app, user }
-			}),
-		)
-
-		return { ...page, page: items }
 	},
 })
 
@@ -50,21 +44,11 @@ export const listByStatus = query({
 	},
 	handler: async (ctx, { status, paginationOpts }) => {
 		await requireAdminReader(ctx)
-
-		const page = await ctx.db
+		return await ctx.db
 			.query('fundApplications')
 			.withIndex('by_status', (q) => q.eq('status', status))
 			.order('desc')
 			.paginate(paginationOpts)
-
-		const items = await Promise.all(
-			page.page.map(async (app) => {
-				const user = await ctx.db.get(app.userId)
-				return { ...app, user }
-			}),
-		)
-
-		return { ...page, page: items }
 	},
 })
 
@@ -88,7 +72,11 @@ export const counts = query({
 	},
 })
 
-/** Admin + athlete: single application with its user record. */
+/**
+ * Admin + athlete: a single application.
+ * `name` and `email` are denormalized onto the application at submit time,
+ * so the related user document is not joined into the response.
+ */
 export const getById = query({
 	args: { id: v.id('fundApplications') },
 	handler: async (ctx, { id }) => {
@@ -107,8 +95,7 @@ export const getById = query({
 			}
 		}
 
-		const user = await ctx.db.get(app.userId)
-		return { ...app, user }
+		return app
 	},
 })
 

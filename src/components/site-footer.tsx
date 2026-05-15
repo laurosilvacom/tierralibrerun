@@ -7,7 +7,7 @@ import { useTheme } from 'next-themes'
 import { useEffect, useState } from 'react'
 import { TrailMarkerLogo } from '@/components/logo'
 
-const HIDE_FOOTER_PREFIXES = ['/dashboard', '/fund/apply']
+const HIDE_FOOTER_PREFIXES = ['/dashboard', '/fund/apply', '/admin']
 
 function ThemeToggle() {
 	const { resolvedTheme, setTheme } = useTheme()

@@ -4,24 +4,91 @@ import { useConvexAuth, useMutation, useQuery } from 'convex/react'
 import { format } from 'date-fns'
 import {
 	ArrowLeft,
-	CheckCircle,
-	XCircle,
-	User,
-	MapPin,
 	Calendar,
+	Check,
+	Clock,
 	Heart,
+	Mail,
+	MapPin,
 	Trophy,
+	X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { use, useState } from 'react'
 import { toast } from 'sonner'
+import { DeleteApplication } from '@/components/admin/delete-application'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { Separator } from '@/components/ui/separator'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/convex/_generated/api'
-import  { type Id } from '@/convex/_generated/dataModel'
+import { type Id } from '@/convex/_generated/dataModel'
+import { cn } from '@/lib/utils'
+
+type Status = 'PENDING' | 'APPROVED' | 'DENIED'
+
+const STATUS_CONFIG: Record<
+	Status,
+	{
+		label: string
+		icon: typeof Clock
+		dotColor: string
+		textColor: string
+		bgColor: string
+	}
+> = {
+	PENDING: {
+		label: 'Pending',
+		icon: Clock,
+		dotColor: 'bg-primary',
+		textColor: 'text-primary',
+		bgColor: 'bg-primary/10',
+	},
+	APPROVED: {
+		label: 'Approved',
+		icon: Check,
+		dotColor: 'bg-chart-5',
+		textColor: 'text-chart-5',
+		bgColor: 'bg-chart-5/10',
+	},
+	DENIED: {
+		label: 'Not selected',
+		icon: X,
+		dotColor: 'bg-muted-foreground',
+		textColor: 'text-muted-foreground',
+		bgColor: 'bg-muted',
+	},
+}
+
+function SectionCard({
+	title,
+	children,
+}: {
+	title: string
+	children: React.ReactNode
+}) {
+	return (
+		<div className="border-border bg-card rounded-2xl border p-6">
+			<h2 className="text-foreground mb-4 text-base font-semibold tracking-tight">
+				{title}
+			</h2>
+			<div className="space-y-5">{children}</div>
+		</div>
+	)
+}
+
+function Essay({ label, content }: { label: string; content?: string }) {
+	if (!content) return null
+	return (
+		<div>
+			<p className="text-muted-foreground mb-1.5 text-xs font-medium">
+				{label}
+			</p>
+			<p className="text-foreground text-sm leading-relaxed whitespace-pre-line">
+				{content}
+			</p>
+		</div>
+	)
+}
 
 export default function ApplicationDetailPage({
 	params,
@@ -50,15 +117,16 @@ export default function ApplicationDetailPage({
 	if (isConvexAuthLoading || app === undefined) {
 		return (
 			<div className="space-y-4">
-				<div className="bg-card h-8 w-48 animate-pulse rounded" />
-				<div className="bg-card h-64 animate-pulse rounded-xl" />
+				<div className="bg-muted h-6 w-32 animate-pulse rounded" />
+				<div className="bg-muted h-10 w-72 animate-pulse rounded" />
+				<div className="bg-muted mt-6 h-64 animate-pulse rounded-2xl" />
 			</div>
 		)
 	}
 
 	if (!isConvexAuthenticated) {
 		return (
-			<div className="text-muted-foreground py-24 text-center">
+			<div className="text-muted-foreground py-24 text-center text-sm">
 				Refresh the page to reconnect your admin session.
 			</div>
 		)
@@ -66,8 +134,18 @@ export default function ApplicationDetailPage({
 
 	if (app === null) {
 		return (
-			<div className="text-muted-foreground py-24 text-center">
-				Application not found.
+			<div className="animate-fade-in-up py-24 text-center">
+				<p className="text-foreground text-lg font-medium">
+					Application not found.
+				</p>
+				<div className="mt-6">
+					<Button asChild variant="ghost" className="rounded-full">
+						<Link href="/admin/applications">
+							<ArrowLeft className="mr-1 h-4 w-4" />
+							Back to applications
+						</Link>
+					</Button>
+				</div>
 			</div>
 		)
 	}
@@ -127,159 +205,111 @@ export default function ApplicationDetailPage({
 		}
 	}
 
-	const STATUS_COLOR = {
-		PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-		APPROVED: 'bg-green-50 text-green-700 border-green-200',
-		DENIED: 'bg-red-50 text-red-700 border-red-200',
-	} as const
-	const statusColor = STATUS_COLOR[app.status as keyof typeof STATUS_COLOR] ?? STATUS_COLOR.PENDING
+	const config = STATUS_CONFIG[app.status as Status] ?? STATUS_CONFIG.PENDING
+	const isPending = app.status === 'PENDING'
 
 	return (
-		<div className="space-y-6">
+		<div className="animate-fade-in-up">
+			{/* Back */}
+			<Link
+				href="/admin/applications"
+				className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium"
+			>
+				<ArrowLeft className="h-4 w-4" />
+				Applications
+			</Link>
+
 			{/* Header */}
-			<div className="flex items-start justify-between gap-4">
-				<div className="flex items-center gap-3">
-					<Link href="/admin/applications">
-						<Button variant="ghost" size="sm">
-							<ArrowLeft className="mr-1 h-4 w-4" />
-							Back
-						</Button>
-					</Link>
-					<div>
-						<div className="flex items-center gap-2">
-							<h1 className="text-xl font-bold">{app.name}</h1>
-							<span
-								className={`rounded-full border px-2.5 py-0.5 text-xs font-medium ${statusColor}`}
-							>
-								{app.status}
-							</span>
-						</div>
-						<p className="text-muted-foreground text-sm">
-							{app.race}
-							{app.raceDate
-								? ` · ${format(new Date(app.raceDate), 'MMM d, yyyy')}`
-								: ''}
-						</p>
+			<header className="mt-6 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
+				<div>
+					<div className="flex items-center gap-3">
+						<h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
+							{app.name}
+						</h1>
+					</div>
+					<div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+						<span
+							className={cn(
+								'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
+								config.bgColor,
+								config.textColor,
+							)}
+						>
+							<span className={cn('h-1.5 w-1.5 rounded-full', config.dotColor)} />
+							{config.label}
+						</span>
+						<span>·</span>
+						<span>{app.race}</span>
+						{app.raceDate && (
+							<>
+								<span aria-hidden>·</span>
+								<span>{format(new Date(app.raceDate), 'MMM d, yyyy')}</span>
+							</>
+						)}
 					</div>
 				</div>
 
-				{app.status === 'PENDING' && (
-					<div className="flex gap-2">
+				{isPending && (
+					<div className="flex shrink-0 gap-2">
 						<Button
-							variant="outline"
+							variant="ghost"
 							onClick={handleDeny}
 							disabled={!!loading}
-							className="border-red-200 text-red-600 hover:bg-red-50"
+							className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
 						>
-							<XCircle className="mr-1 h-4 w-4" />
 							Deny
 						</Button>
 						<Button
 							onClick={handleApprove}
 							disabled={!!loading}
-							className="bg-green-600 text-white hover:bg-green-700"
+							className="bg-chart-5 hover:bg-chart-5/90 rounded-full text-white"
 						>
-							<CheckCircle className="mr-1 h-4 w-4" />
 							Approve
 						</Button>
 					</div>
 				)}
-			</div>
+			</header>
 
-			<div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
-				{/* Main content */}
-				<div className="space-y-6 lg:col-span-2">
-					{/* About the applicant */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">About Them</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div>
-								<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-									Why this race
-								</p>
-								<p className="text-sm leading-relaxed whitespace-pre-line">
-									{app.reason}
-								</p>
-							</div>
-							{app.experience && (
-								<div>
-									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-										Access to trail running
-									</p>
-									<p className="text-sm leading-relaxed whitespace-pre-line">
-										{app.experience}
-									</p>
-								</div>
-							)}
-							{app.goals && (
-								<div>
-									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-										Goals
-									</p>
-									<p className="text-sm leading-relaxed whitespace-pre-line">
-										{app.goals}
-									</p>
-								</div>
-							)}
-						</CardContent>
-					</Card>
+			<div className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-3">
+				{/* Main */}
+				<div className="space-y-5 lg:col-span-2">
+					<SectionCard title="About them">
+						<Essay label="Why this race" content={app.reason} />
+						<Essay
+							label="Access to trail running"
+							content={app.experience}
+						/>
+						<Essay label="Goals" content={app.goals} />
+					</SectionCard>
 
-					{/* Community */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">Community Impact</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-4">
-							<div>
-								<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-									Community contribution
-								</p>
-								<p className="text-sm leading-relaxed whitespace-pre-line">
-									{app.communityContribution}
-								</p>
-							</div>
-							{app.tierraLibreContribution && (
-								<div>
-									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-										Tierra Libre contribution
-									</p>
-									<p className="text-sm leading-relaxed whitespace-pre-line">
-										{app.tierraLibreContribution}
-									</p>
-								</div>
-							)}
-							{app.additionalAssistanceNeeds && (
-								<div>
-									<p className="text-muted-foreground mb-1 text-xs font-medium uppercase tracking-wide">
-										Additional assistance needs
-									</p>
-									<p className="text-sm leading-relaxed whitespace-pre-line">
-										{app.additionalAssistanceNeeds}
-									</p>
-								</div>
-							)}
-						</CardContent>
-					</Card>
+					<SectionCard title="Community impact">
+						<Essay
+							label="Community contribution"
+							content={app.communityContribution}
+						/>
+						<Essay
+							label="Tierra Libre contribution"
+							content={app.tierraLibreContribution}
+						/>
+						<Essay
+							label="Additional assistance needs"
+							content={app.additionalAssistanceNeeds}
+						/>
+					</SectionCard>
 				</div>
 
 				{/* Sidebar */}
-				<div className="space-y-4">
-					{/* Demographics */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">Applicant Info</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-3 text-sm">
+				<div className="space-y-5">
+					<SectionCard title="Applicant">
+						<div className="space-y-3 text-sm">
 							<div className="flex items-center gap-2">
-								<User className="text-muted-foreground h-4 w-4 shrink-0" />
-								<span>{app.email}</span>
+								<Mail className="text-muted-foreground h-4 w-4 shrink-0" />
+								<span className="break-words">{app.email}</span>
 							</div>
 							{app.age > 0 && (
-								<div className="flex items-center gap-2">
-									<span className="text-muted-foreground text-xs">Age</span>
-									<span>{app.age}</span>
+								<div className="text-muted-foreground flex items-center gap-2 text-xs">
+									<span>Age</span>
+									<span className="text-foreground text-sm">{app.age}</span>
 								</div>
 							)}
 							{app.zipcode && app.zipcode !== 'Not specified' && (
@@ -288,40 +318,35 @@ export default function ApplicationDetailPage({
 									<span>{app.zipcode}</span>
 								</div>
 							)}
-							<Separator />
-							<div className="flex flex-wrap gap-1.5">
-								{app.bipocIdentity && (
-									<Badge variant="outline" className="text-xs">
-										BIPOC
+						</div>
+						<div className="flex flex-wrap gap-1.5">
+							{app.bipocIdentity && (
+								<Badge variant="outline" className="text-xs font-normal">
+									BIPOC
+								</Badge>
+							)}
+							{app.genderIdentity &&
+								app.genderIdentity !== 'Not specified' && (
+									<Badge variant="outline" className="text-xs font-normal">
+										{app.genderIdentity}
 									</Badge>
 								)}
-								{app.genderIdentity &&
-									app.genderIdentity !== 'Not specified' && (
-										<Badge variant="outline" className="text-xs">
-											{app.genderIdentity}
-										</Badge>
-									)}
-								{app.firstRace && (
-									<Badge variant="outline" className="text-xs">
-										First trail race
-									</Badge>
-								)}
-								{app.wantsMentor && (
-									<Badge variant="outline" className="text-xs">
-										<Heart className="mr-1 h-3 w-3" />
-										Wants mentor
-									</Badge>
-								)}
-							</div>
-						</CardContent>
-					</Card>
+							{app.firstRace && (
+								<Badge variant="outline" className="text-xs font-normal">
+									First trail race
+								</Badge>
+							)}
+							{app.wantsMentor && (
+								<Badge variant="outline" className="text-xs font-normal">
+									<Heart className="mr-1 h-3 w-3" />
+									Wants mentor
+								</Badge>
+							)}
+						</div>
+					</SectionCard>
 
-					{/* Race info */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">Race</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2 text-sm">
+					<SectionCard title="Race">
+						<div className="space-y-3 text-sm">
 							<div className="flex items-start gap-2">
 								<Trophy className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
 								<span>{app.race}</span>
@@ -338,50 +363,42 @@ export default function ApplicationDetailPage({
 									<span>{app.raceLocation}</span>
 								</div>
 							)}
-						</CardContent>
-					</Card>
+						</div>
+					</SectionCard>
 
-					{/* Submitted */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">Submitted</CardTitle>
-						</CardHeader>
-						<CardContent className="text-sm">
-							<p className="text-muted-foreground">
-								{format(new Date(app._creationTime), 'MMMM d, yyyy h:mm a')}
+					<SectionCard title="Submitted">
+						<p className="text-muted-foreground text-sm">
+							{format(new Date(app._creationTime), 'MMMM d, yyyy · h:mm a')}
+						</p>
+						{app.reviewedAt && (
+							<p className="text-muted-foreground text-sm">
+								Reviewed {format(new Date(app.reviewedAt), 'MMM d, yyyy')}
 							</p>
-							{app.reviewedAt && (
-								<p className="text-muted-foreground mt-1">
-									Reviewed {format(new Date(app.reviewedAt), 'MMM d, yyyy')}
-								</p>
-							)}
-						</CardContent>
-					</Card>
+						)}
+					</SectionCard>
 
-					{/* Admin notes */}
-					<Card>
-						<CardHeader>
-							<CardTitle className="text-base">Admin Notes</CardTitle>
-						</CardHeader>
-						<CardContent className="space-y-2">
-							<Textarea
-								placeholder="Add notes about this application..."
-								value={notes ?? app.adminNotes ?? ''}
-								onChange={(e) => setNotes(e.target.value)}
-								rows={4}
-								className="text-sm"
-							/>
-							<Button
-								size="sm"
-								variant="outline"
-								onClick={handleSaveNotes}
-								disabled={loading === 'notes'}
-								className="w-full"
-							>
-								Save notes
-							</Button>
-						</CardContent>
-					</Card>
+					<SectionCard title="Admin notes">
+						<Textarea
+							placeholder="Notes on this application…"
+							value={notes ?? app.adminNotes ?? ''}
+							onChange={(e) => setNotes(e.target.value)}
+							rows={4}
+							className="resize-none text-sm leading-relaxed"
+						/>
+						<Button
+							size="sm"
+							variant="outline"
+							onClick={handleSaveNotes}
+							disabled={loading === 'notes'}
+							className="w-full rounded-full"
+						>
+							Save notes
+						</Button>
+					</SectionCard>
+
+					<div className="px-2">
+						<DeleteApplication id={app._id} />
+					</div>
 				</div>
 			</div>
 		</div>
