@@ -4,55 +4,47 @@ import { useUser } from '@clerk/nextjs'
 import { useConvexAuth, useMutation, useQuery } from 'convex/react'
 import { format } from 'date-fns'
 import {
-	CheckCircle,
+	Check,
 	Clock,
-	XCircle,
+	X,
 	Plus,
 	FileText,
-	Trophy,
+	ArrowRight,
 } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect } from 'react'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from '@/components/ui/card'
 import { api } from '@/convex/_generated/api'
 import { cn } from '@/lib/utils'
 
 const STATUS_CONFIG = {
 	PENDING: {
-		label: 'Under Review',
+		label: 'Under review',
 		icon: Clock,
-		iconClassName: 'text-primary',
-		iconWrapClassName: 'bg-background/85',
-		surfaceClassName: 'border-primary/20 bg-primary/10',
-		badgeClassName: 'border-primary/20 bg-background/85 text-primary',
+		iconWrap: 'bg-primary/10',
+		iconColor: 'text-primary',
+		dotColor: 'bg-primary',
+		textColor: 'text-primary',
 		message:
 			"Your application is being reviewed. We'll email you with updates.",
 	},
 	APPROVED: {
 		label: 'Approved',
-		icon: CheckCircle,
-		iconClassName: 'text-chart-5',
-		iconWrapClassName: 'bg-chart-5/12',
-		surfaceClassName: 'border-chart-5/20 bg-chart-5/8',
-		badgeClassName: 'border-chart-5/20 bg-background/85 text-chart-5',
+		icon: Check,
+		iconWrap: 'bg-chart-5/10',
+		iconColor: 'text-chart-5',
+		dotColor: 'bg-chart-5',
+		textColor: 'text-chart-5',
 		message:
-			'Congratulations! Your application has been approved. Watch your email for next steps.',
+			'Congratulations. Your application has been approved. Watch your email for next steps.',
 	},
 	DENIED: {
-		label: 'Not Selected',
-		icon: XCircle,
-		iconClassName: 'text-muted-foreground',
-		iconWrapClassName: 'bg-background/85',
-		surfaceClassName: 'border-border bg-muted/70',
-		badgeClassName: 'border-border bg-background/85 text-muted-foreground',
+		label: 'Not selected',
+		icon: X,
+		iconWrap: 'bg-muted',
+		iconColor: 'text-muted-foreground',
+		dotColor: 'bg-muted-foreground',
+		textColor: 'text-muted-foreground',
 		message: 'This application was not selected for this cycle.',
 	},
 } as const
@@ -64,7 +56,6 @@ export default function DashboardPage() {
 		isLoading: isConvexAuthLoading,
 	} = useConvexAuth()
 
-	// Create the user record in Convex on first visit — no separate onboarding required.
 	const getOrCreate = useMutation(api.users.getOrCreate)
 	useEffect(() => {
 		if (isLoaded && user && isConvexAuthenticated) {
@@ -72,29 +63,36 @@ export default function DashboardPage() {
 		}
 	}, [isLoaded, user, isConvexAuthenticated, getOrCreate])
 
-	// Live subscription — updates instantly when admin approves or denies
 	const applications = useQuery(
 		api.applications.listMine,
 		isConvexAuthenticated ? {} : 'skip',
 	)
 
+	/* Loading */
 	if (!isLoaded || isConvexAuthLoading || applications === undefined) {
 		return (
-			<div className="container mx-auto max-w-3xl px-4 py-12">
-				<div className="space-y-4">
-					<div className="bg-card h-8 w-48 animate-pulse rounded" />
-					<div className="bg-card h-48 animate-pulse rounded-xl" />
+			<div className="bg-background min-h-[calc(100dvh-4rem)]">
+				<div className="mx-auto max-w-3xl px-6 py-10 md:py-16">
+					<div className="bg-muted h-4 w-32 animate-pulse rounded" />
+					<div className="bg-muted mt-3 h-10 w-72 max-w-full animate-pulse rounded" />
+					<div className="bg-muted mt-3 h-5 w-96 max-w-full animate-pulse rounded" />
+					<div className="bg-muted mt-10 h-24 w-full animate-pulse rounded-2xl" />
+					<div className="bg-muted mt-10 h-6 w-32 animate-pulse rounded" />
+					<div className="bg-muted mt-4 h-28 w-full animate-pulse rounded-2xl" />
 				</div>
 			</div>
 		)
 	}
 
+	/* Session not ready */
 	if (!isConvexAuthenticated) {
 		return (
-			<div className="container mx-auto max-w-3xl px-4 py-12">
-				<div className="rounded-xl border p-6">
-					<h1 className="text-xl font-semibold">Session not ready</h1>
-					<p className="text-muted-foreground mt-2 text-sm">
+			<div className="bg-background flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-12">
+				<div className="animate-fade-in-up mx-auto w-full max-w-md text-center">
+					<h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
+						Session not ready.
+					</h1>
+					<p className="text-muted-foreground mt-3 text-base leading-relaxed md:text-lg">
 						Refresh the page to reconnect your authenticated session.
 					</p>
 				</div>
@@ -113,91 +111,94 @@ export default function DashboardPage() {
 	).length
 
 	return (
-		<div className="container mx-auto max-w-5xl px-4 py-10 sm:py-12">
-			<section className="border-primary/15 from-primary/12 via-background to-accent/70 relative mb-8 overflow-hidden rounded-[calc(var(--radius)+0.75rem)] border bg-gradient-to-br p-6 shadow-sm sm:p-8">
-				<div className="bg-primary/14 absolute top-0 right-0 h-40 w-40 translate-x-10 -translate-y-10 rounded-full blur-3xl" />
-				<div className="bg-accent/80 absolute bottom-0 left-8 h-32 w-32 translate-y-10 rounded-full blur-3xl" />
-				<div className="relative">
-					<Badge
-						variant="secondary"
-						className="border-border/60 bg-background/80 mb-4 border px-3 py-1 text-[10px] tracking-[0.18em] uppercase"
-					>
+		<div className="bg-background min-h-[calc(100dvh-4rem)]">
+			<div className="animate-fade-in-up mx-auto max-w-3xl px-6 py-10 md:py-16">
+				{/* Header */}
+				<header className="mb-10">
+					<p className="text-muted-foreground text-sm font-medium">
 						Athlete dashboard
-					</Badge>
-					<div className="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-						<div className="max-w-2xl">
-							<h1 className="text-3xl font-bold tracking-tight sm:text-4xl">
-								Welcome, {fullName}
-							</h1>
-							<p className="text-muted-foreground mt-2 max-w-xl text-sm leading-6 sm:text-base">
-								Track your race funding applications, review status changes, and
-								jump back into a new submission when you&apos;re ready.
-							</p>
-						</div>
-						<div className="grid gap-3 sm:grid-cols-3 lg:min-w-[420px]">
-							<div className="border-border/70 bg-background/80 rounded-2xl border px-4 py-3 backdrop-blur">
-								<p className="text-muted-foreground text-[11px] tracking-[0.18em] uppercase">
-									Applications
-								</p>
-								<p className="mt-2 text-2xl font-semibold">
-									{applicationCount}
-								</p>
-							</div>
-							<div className="border-primary/15 bg-background/80 rounded-2xl border px-4 py-3 backdrop-blur">
-								<p className="text-muted-foreground text-[11px] tracking-[0.18em] uppercase">
-									In review
-								</p>
-								<p className="text-primary mt-2 text-2xl font-semibold">
-									{pendingCount}
-								</p>
-							</div>
-							<div className="border-chart-5/15 bg-background/80 rounded-2xl border px-4 py-3 backdrop-blur">
-								<p className="text-muted-foreground text-[11px] tracking-[0.18em] uppercase">
-									Approved
-								</p>
-								<p className="text-chart-5 mt-2 text-2xl font-semibold">
-									{approvedCount}
-								</p>
-							</div>
-						</div>
+					</p>
+					<h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
+						Welcome, {fullName}.
+					</h1>
+					<p className="text-muted-foreground mt-2 text-base leading-relaxed md:text-lg">
+						Track your race funding applications and updates.
+					</p>
+				</header>
+
+				{/* Metrics */}
+				<div className="border-border bg-card divide-border mb-10 grid grid-cols-3 divide-x rounded-2xl border">
+					<div className="p-5">
+						<p className="text-foreground text-3xl font-semibold tracking-tight tabular-nums">
+							{applicationCount}
+						</p>
+						<p className="text-muted-foreground mt-1 text-xs font-medium">
+							Applications
+						</p>
+					</div>
+					<div className="p-5">
+						<p
+							className={cn(
+								'text-3xl font-semibold tracking-tight tabular-nums',
+								pendingCount > 0 ? 'text-primary' : 'text-foreground',
+							)}
+						>
+							{pendingCount}
+						</p>
+						<p className="text-muted-foreground mt-1 text-xs font-medium">
+							In review
+						</p>
+					</div>
+					<div className="p-5">
+						<p
+							className={cn(
+								'text-3xl font-semibold tracking-tight tabular-nums',
+								approvedCount > 0 ? 'text-chart-5' : 'text-foreground',
+							)}
+						>
+							{approvedCount}
+						</p>
+						<p className="text-muted-foreground mt-1 text-xs font-medium">
+							Approved
+						</p>
 					</div>
 				</div>
-			</section>
 
-			<Card className="border-primary/10 overflow-hidden shadow-sm">
-				<CardHeader className="border-border/60 border-b pb-6">
-					<div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-						<div>
-							<CardTitle className="text-2xl">
-								Race Funding Applications
-							</CardTitle>
-							<CardDescription className="mt-1">
-								Your applications and their current status
-							</CardDescription>
-						</div>
-						<Button asChild size="sm">
+				{/* Applications */}
+				<section>
+					<div className="mb-4 flex items-center justify-between">
+						<h2 className="text-foreground text-lg font-semibold tracking-tight">
+							Applications
+						</h2>
+						<Button asChild size="sm" className="rounded-full">
 							<Link href="/fund/apply">
 								<Plus className="mr-1 h-4 w-4" />
 								Apply
 							</Link>
 						</Button>
 					</div>
-				</CardHeader>
-				<CardContent className="pt-6">
+
 					{applications.length === 0 ? (
-						<div className="border-border/80 bg-muted/40 flex flex-col items-center rounded-2xl border border-dashed px-6 py-12 text-center">
-							<FileText className="text-muted-foreground/30 mb-4 h-16 w-16" />
-							<h3 className="mb-1 font-medium">No applications yet</h3>
-							<p className="text-muted-foreground mb-6 text-sm">
-								Apply for race funding to get started. The application takes
-								about 15 minutes.
+						<div className="border-border bg-card rounded-2xl border p-10 text-center">
+							<div className="bg-primary/10 mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
+								<FileText className="text-primary h-5 w-5" strokeWidth={2} />
+							</div>
+							<h3 className="text-foreground text-base font-medium">
+								No applications yet
+							</h3>
+							<p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-relaxed">
+								Apply for race funding to get started. It takes about 15
+								minutes.
 							</p>
-							<Button asChild>
-								<Link href="/fund/apply">Apply for Race Funding</Link>
+							<Button asChild className="mt-6 rounded-full">
+								<Link href="/fund/apply">
+									Apply for race funding
+									<ArrowRight className="ml-2 h-4 w-4" />
+								</Link>
 							</Button>
 						</div>
 					) : (
-						<div className="space-y-4">
+						<div className="space-y-3">
 							{applications.map(
 								(app: {
 									_id: string
@@ -213,68 +214,75 @@ export default function DashboardPage() {
 									return (
 										<div
 											key={app._id}
-											className={cn(
-												'rounded-2xl border p-4 transition-colors sm:p-5',
-												config.surfaceClassName,
-											)}
+											className="border-border bg-card hover:border-foreground/20 rounded-2xl border p-5 transition-colors"
 										>
-											<div className="flex items-start justify-between gap-3">
-												<div className="flex min-w-0 items-start gap-3">
-													<div
-														className={cn(
-															'border-border/60 flex h-10 w-10 shrink-0 items-center justify-center rounded-full border',
-															config.iconWrapClassName,
-														)}
-													>
-														<Icon
-															className={cn(
-																'h-5 w-5 shrink-0',
-																config.iconClassName,
-															)}
-														/>
-													</div>
-													<div className="min-w-0">
-														<div className="flex flex-wrap items-center gap-2">
-															<span className="text-base font-semibold">
-																{app.race}
-															</span>
-															<Badge
-																variant="outline"
-																className={cn(
-																	'text-[11px] tracking-[0.14em] uppercase',
-																	config.badgeClassName,
-																)}
-															>
-																{config.label}
-															</Badge>
-														</div>
-														<p className="text-muted-foreground mt-0.5 text-xs">
-															Applied{' '}
-															{format(
-																new Date(app._creationTime),
-																'MMMM d, yyyy',
-															)}
-														</p>
-													</div>
+											<div className="flex items-start gap-4">
+												<div
+													className={cn(
+														'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+														config.iconWrap,
+													)}
+												>
+													<Icon
+														className={cn('h-5 w-5', config.iconColor)}
+														strokeWidth={2.5}
+													/>
 												</div>
-												{app.raceDate && (
-													<div className="text-muted-foreground border-border/60 bg-background/80 flex shrink-0 items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-medium">
-														<Trophy className="h-3 w-3" />
-														{format(new Date(app.raceDate), 'MMM d, yyyy')}
+												<div className="min-w-0 flex-1">
+													<div className="flex items-start justify-between gap-3">
+														<div className="min-w-0">
+															<p className="text-foreground truncate text-base font-medium">
+																{app.race}
+															</p>
+															<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+																<span
+																	className={cn(
+																		'flex items-center gap-1.5 font-medium',
+																		config.textColor,
+																	)}
+																>
+																	<span
+																		className={cn(
+																			'h-1.5 w-1.5 rounded-full',
+																			config.dotColor,
+																		)}
+																	/>
+																	<span>{config.label}</span>
+																</span>
+																<span aria-hidden>·</span>
+																<span>
+																	Applied{' '}
+																	{format(
+																		new Date(app._creationTime),
+																		'MMM d, yyyy',
+																	)}
+																</span>
+															</div>
+														</div>
+														{app.raceDate && (
+															<div className="hidden shrink-0 text-right sm:block">
+																<p className="text-muted-foreground text-xs">
+																	Race day
+																</p>
+																<p className="text-foreground mt-0.5 text-sm font-medium">
+																	{format(new Date(app.raceDate), 'MMM d, yyyy')}
+																</p>
+															</div>
+														)}
 													</div>
-												)}
+													<p className="text-muted-foreground mt-3 text-sm leading-relaxed">
+														{config.message}
+													</p>
+												</div>
 											</div>
-											<p className="text-muted-foreground mt-4 text-sm leading-6">
-												{config.message}
-											</p>
 										</div>
 									)
 								},
 							)}
 						</div>
 					)}
-				</CardContent>
-			</Card>
+				</section>
+			</div>
 		</div>
 	)
 }
