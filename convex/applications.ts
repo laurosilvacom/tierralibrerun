@@ -8,7 +8,9 @@ import {
 	requireIdentity,
 } from './auth'
 
-function definedFields<T extends Record<string, unknown>>(fields: T): Partial<T> {
+function definedFields<T extends Record<string, unknown>>(
+	fields: T,
+): Partial<T> {
 	return Object.fromEntries(
 		Object.entries(fields).filter(([, value]) => value !== undefined),
 	) as Partial<T>
@@ -59,9 +61,18 @@ export const counts = query({
 		await requireAdminReader(ctx)
 
 		const [pending, approved, denied] = await Promise.all([
-			ctx.db.query('fundApplications').withIndex('by_status', (q) => q.eq('status', 'PENDING')).collect(),
-			ctx.db.query('fundApplications').withIndex('by_status', (q) => q.eq('status', 'APPROVED')).collect(),
-			ctx.db.query('fundApplications').withIndex('by_status', (q) => q.eq('status', 'DENIED')).collect(),
+			ctx.db
+				.query('fundApplications')
+				.withIndex('by_status', (q) => q.eq('status', 'PENDING'))
+				.collect(),
+			ctx.db
+				.query('fundApplications')
+				.withIndex('by_status', (q) => q.eq('status', 'APPROVED'))
+				.collect(),
+			ctx.db
+				.query('fundApplications')
+				.withIndex('by_status', (q) => q.eq('status', 'DENIED'))
+				.collect(),
 		])
 		return {
 			pending: pending.length,
@@ -87,7 +98,9 @@ export const getById = query({
 		if (!isAdminReader(identity)) {
 			const currentUser = await ctx.db
 				.query('users')
-				.withIndex('by_clerkId', (q) => q.eq('clerkId', identity.subject as string))
+				.withIndex('by_clerkId', (q) =>
+					q.eq('clerkId', identity.subject as string),
+				)
 				.unique()
 
 			if (!currentUser || currentUser._id !== app.userId) {
@@ -95,7 +108,10 @@ export const getById = query({
 			}
 		}
 
-		return app
+		return {
+			...app,
+			user: isAdminReader(identity) ? await ctx.db.get(app.userId) : null,
+		}
 	},
 })
 
@@ -195,9 +211,15 @@ export const submit = mutation({
 				.collect()
 
 			if (recent.length >= 1) {
-				const oldest = recent.sort((a, b) => a._creationTime - b._creationTime)[0]!
-				const nextEligible = new Date(oldest._creationTime + 6 * 30 * 24 * 60 * 60 * 1000)
-				throw new Error(`You can apply again after ${nextEligible.toLocaleDateString()}`)
+				const oldest = recent.sort(
+					(a, b) => a._creationTime - b._creationTime,
+				)[0]!
+				const nextEligible = new Date(
+					oldest._creationTime + 6 * 30 * 24 * 60 * 60 * 1000,
+				)
+				throw new Error(
+					`You can apply again after ${nextEligible.toLocaleDateString()}`,
+				)
 			}
 		}
 
@@ -235,15 +257,18 @@ export const approve = mutation({
 	args: { id: v.id('fundApplications'), adminNotes: v.optional(v.string()) },
 	handler: async (ctx, { id, adminNotes }) => {
 		const identity = await requireAdminWriter(ctx)
-		if (!await ctx.db.get(id)) throw new Error('Application not found')
+		if (!(await ctx.db.get(id))) throw new Error('Application not found')
 
-		await ctx.db.patch(id, definedFields({
-			status: 'APPROVED',
-			adminNotes,
-			reviewedAt: Date.now(),
-			reviewedByClerkId: identity.subject,
-			updatedAt: Date.now(),
-		}))
+		await ctx.db.patch(
+			id,
+			definedFields({
+				status: 'APPROVED',
+				adminNotes,
+				reviewedAt: Date.now(),
+				reviewedByClerkId: identity.subject,
+				updatedAt: Date.now(),
+			}),
+		)
 	},
 })
 
@@ -252,15 +277,18 @@ export const deny = mutation({
 	args: { id: v.id('fundApplications'), adminNotes: v.optional(v.string()) },
 	handler: async (ctx, { id, adminNotes }) => {
 		const identity = await requireAdminWriter(ctx)
-		if (!await ctx.db.get(id)) throw new Error('Application not found')
+		if (!(await ctx.db.get(id))) throw new Error('Application not found')
 
-		await ctx.db.patch(id, definedFields({
-			status: 'DENIED',
-			adminNotes,
-			reviewedAt: Date.now(),
-			reviewedByClerkId: identity.subject,
-			updatedAt: Date.now(),
-		}))
+		await ctx.db.patch(
+			id,
+			definedFields({
+				status: 'DENIED',
+				adminNotes,
+				reviewedAt: Date.now(),
+				reviewedByClerkId: identity.subject,
+				updatedAt: Date.now(),
+			}),
+		)
 	},
 })
 
