@@ -3,14 +3,7 @@
 import { useUser } from '@clerk/nextjs'
 import { useConvexAuth, useMutation, useQuery } from 'convex/react'
 import { format } from 'date-fns'
-import {
-	Check,
-	Clock,
-	X,
-	Plus,
-	FileText,
-	ArrowRight,
-} from 'lucide-react'
+import { Check, Clock, X, Plus, FileText, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
 import { useEffect } from 'react'
 import { Button } from '@/components/ui/button'
@@ -21,7 +14,7 @@ const STATUS_CONFIG = {
 	PENDING: {
 		label: 'Under review',
 		icon: Clock,
-		iconWrap: 'bg-primary/10',
+		iconWrap: 'bg-primary/15',
 		iconColor: 'text-primary',
 		dotColor: 'bg-primary',
 		textColor: 'text-primary',
@@ -31,7 +24,7 @@ const STATUS_CONFIG = {
 	APPROVED: {
 		label: 'Approved',
 		icon: Check,
-		iconWrap: 'bg-chart-5/10',
+		iconWrap: 'bg-chart-5/15',
 		iconColor: 'text-chart-5',
 		dotColor: 'bg-chart-5',
 		textColor: 'text-chart-5',
@@ -41,10 +34,10 @@ const STATUS_CONFIG = {
 	DENIED: {
 		label: 'Not selected',
 		icon: X,
-		iconWrap: 'bg-muted',
-		iconColor: 'text-muted-foreground',
-		dotColor: 'bg-muted-foreground',
-		textColor: 'text-muted-foreground',
+		iconWrap: 'bg-destructive/10',
+		iconColor: 'text-destructive',
+		dotColor: 'bg-destructive',
+		textColor: 'text-destructive',
 		message: 'This application was not selected for this cycle.',
 	},
 } as const
@@ -129,7 +122,7 @@ export default function DashboardPage() {
 				{/* Metrics */}
 				<div className="border-border bg-card divide-border mb-10 grid grid-cols-3 divide-x rounded-2xl border">
 					<div className="p-5">
-						<p className="text-foreground text-3xl font-semibold tracking-tight tabular-nums">
+						<p className="text-card-foreground text-3xl font-semibold tracking-tight tabular-nums">
 							{applicationCount}
 						</p>
 						<p className="text-muted-foreground mt-1 text-xs font-medium">
@@ -140,7 +133,7 @@ export default function DashboardPage() {
 						<p
 							className={cn(
 								'text-3xl font-semibold tracking-tight tabular-nums',
-								pendingCount > 0 ? 'text-primary' : 'text-foreground',
+								pendingCount > 0 ? 'text-primary' : 'text-card-foreground',
 							)}
 						>
 							{pendingCount}
@@ -153,7 +146,7 @@ export default function DashboardPage() {
 						<p
 							className={cn(
 								'text-3xl font-semibold tracking-tight tabular-nums',
-								approvedCount > 0 ? 'text-chart-5' : 'text-foreground',
+								approvedCount > 0 ? 'text-chart-5' : 'text-card-foreground',
 							)}
 						>
 							{approvedCount}
@@ -170,7 +163,7 @@ export default function DashboardPage() {
 						<h2 className="text-foreground text-lg font-semibold tracking-tight">
 							Applications
 						</h2>
-						<Button asChild size="sm" className="rounded-full">
+						<Button asChild size="sm">
 							<Link href="/fund/apply">
 								<Plus className="mr-1 h-4 w-4" />
 								Apply
@@ -180,22 +173,24 @@ export default function DashboardPage() {
 
 					{applications.length === 0 ? (
 						<div className="border-border bg-card rounded-2xl border p-10 text-center">
-							<div className="bg-primary/10 mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
+							<div className="bg-accent mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
 								<FileText className="text-primary h-5 w-5" strokeWidth={2} />
 							</div>
-							<h3 className="text-foreground text-base font-medium">
+							<h3 className="text-card-foreground text-base font-medium">
 								No applications yet
 							</h3>
 							<p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-relaxed">
 								Apply for race funding to get started. It takes about 15
 								minutes.
 							</p>
-							<Button asChild className="mt-6 rounded-full">
-								<Link href="/fund/apply">
-									Apply for race funding
-									<ArrowRight className="ml-2 h-4 w-4" />
-								</Link>
-							</Button>
+							<div className="mt-6">
+								<Button asChild>
+									<Link href="/fund/apply">
+										Apply for race funding
+										<ArrowRight className="ml-2 h-4 w-4" />
+									</Link>
+								</Button>
+							</div>
 						</div>
 					) : (
 						<div className="space-y-3">
@@ -214,7 +209,7 @@ export default function DashboardPage() {
 									return (
 										<div
 											key={app._id}
-											className="border-border bg-card hover:border-foreground/20 rounded-2xl border p-5 transition-colors"
+											className="border-border bg-card hover:border-ring/50 rounded-2xl border p-5 transition-colors"
 										>
 											<div className="flex items-start gap-4">
 												<div
@@ -231,7 +226,7 @@ export default function DashboardPage() {
 												<div className="min-w-0 flex-1">
 													<div className="flex items-start justify-between gap-3">
 														<div className="min-w-0">
-															<p className="text-foreground truncate text-base font-medium">
+															<p className="text-card-foreground truncate text-base font-medium">
 																{app.race}
 															</p>
 															<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -264,8 +259,11 @@ export default function DashboardPage() {
 																<p className="text-muted-foreground text-xs">
 																	Race day
 																</p>
-																<p className="text-foreground mt-0.5 text-sm font-medium">
-																	{format(new Date(app.raceDate), 'MMM d, yyyy')}
+																<p className="text-card-foreground mt-0.5 text-sm font-medium">
+																	{format(
+																		new Date(app.raceDate),
+																		'MMM d, yyyy',
+																	)}
 																</p>
 															</div>
 														)}

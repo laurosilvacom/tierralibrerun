@@ -7,20 +7,15 @@ import {
 	useQuery,
 } from 'convex/react'
 import { formatDistanceToNow, format } from 'date-fns'
-import {
-	Check,
-	Clock,
-	X,
-	ChevronRight,
-	Heart,
-	Trophy,
-} from 'lucide-react'
+import { Check, Clock, X, ChevronRight, Heart, Trophy } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Card, CardContent } from '@/components/ui/card'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { api } from '@/convex/_generated/api'
 import { type Id } from '@/convex/_generated/dataModel'
@@ -43,7 +38,7 @@ const STATUS_CONFIG: Record<
 	PENDING: {
 		label: 'Pending',
 		icon: Clock,
-		iconWrap: 'bg-primary/10',
+		iconWrap: 'bg-primary/15',
 		iconColor: 'text-primary',
 		dotColor: 'bg-primary',
 		textColor: 'text-primary',
@@ -51,7 +46,7 @@ const STATUS_CONFIG: Record<
 	APPROVED: {
 		label: 'Approved',
 		icon: Check,
-		iconWrap: 'bg-chart-5/10',
+		iconWrap: 'bg-chart-5/15',
 		iconColor: 'text-chart-5',
 		dotColor: 'bg-chart-5',
 		textColor: 'text-chart-5',
@@ -59,10 +54,10 @@ const STATUS_CONFIG: Record<
 	DENIED: {
 		label: 'Not selected',
 		icon: X,
-		iconWrap: 'bg-muted',
-		iconColor: 'text-muted-foreground',
-		dotColor: 'bg-muted-foreground',
-		textColor: 'text-muted-foreground',
+		iconWrap: 'bg-destructive/10',
+		iconColor: 'text-destructive',
+		dotColor: 'bg-destructive',
+		textColor: 'text-destructive',
 	},
 }
 
@@ -83,7 +78,7 @@ function MetricCell({
 					'text-2xl font-semibold tracking-tight tabular-nums md:text-3xl',
 					tone === 'primary' && 'text-primary',
 					tone === 'chart-5' && 'text-chart-5',
-					!tone && 'text-foreground',
+					!tone && 'text-card-foreground',
 				)}
 			>
 				{value ?? '—'}
@@ -177,36 +172,32 @@ export default function ApplicationsPage() {
 	const isLoading = isConvexAuthLoading || queryStatus === 'LoadingFirstPage'
 
 	return (
-		<div className="animate-fade-in-up">
-			{/* Header */}
-			<header className="mb-10">
-				<p className="text-muted-foreground text-sm font-medium">Admin</p>
-				<h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-					Applications.
-				</h1>
-				<p className="text-muted-foreground mt-2 text-base leading-relaxed md:text-lg">
-					Review, approve, and track race funding requests.
-				</p>
-			</header>
+		<AdminPage>
+			<AdminPageHeader
+				title="Applications."
+				description="Review, approve, and track race funding requests."
+			/>
 
 			{/* Metrics */}
-			<div className="border-border bg-card divide-border mb-10 grid grid-cols-4 divide-x rounded-2xl border">
-				<MetricCell label="Total" value={counts?.total} />
-				<MetricCell
-					label="Pending"
-					value={counts?.pending}
-					highlight="primary"
-				/>
-				<MetricCell
-					label="Approved"
-					value={counts?.approved}
-					highlight="chart-5"
-				/>
-				<MetricCell label="Not selected" value={counts?.denied} />
-			</div>
+			<Card>
+				<CardContent className="divide-border grid grid-cols-4 divide-x p-0">
+					<MetricCell label="Total" value={counts?.total} />
+					<MetricCell
+						label="Pending"
+						value={counts?.pending}
+						highlight="primary"
+					/>
+					<MetricCell
+						label="Approved"
+						value={counts?.approved}
+						highlight="chart-5"
+					/>
+					<MetricCell label="Not selected" value={counts?.denied} />
+				</CardContent>
+			</Card>
 
 			{/* Tabs */}
-			<Tabs value={activeTab} onValueChange={setTab} className="mb-6">
+			<Tabs value={activeTab} onValueChange={setTab}>
 				<TabsList>
 					<TabsTrigger value="all">All</TabsTrigger>
 					<TabsTrigger value="PENDING">Pending</TabsTrigger>
@@ -219,10 +210,7 @@ export default function ApplicationsPage() {
 			{isLoading ? (
 				<div className="space-y-3">
 					{[...Array(4)].map((_, i) => (
-						<div
-							key={i}
-							className="bg-muted h-28 animate-pulse rounded-2xl"
-						/>
+						<div key={i} className="bg-muted h-28 animate-pulse rounded-2xl" />
 					))}
 				</div>
 			) : !isConvexAuthenticated ? (
@@ -231,13 +219,10 @@ export default function ApplicationsPage() {
 				</div>
 			) : results.length === 0 ? (
 				<div className="border-border bg-card rounded-2xl border p-12 text-center">
-					<div className="bg-muted mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
-						<Trophy
-							className="text-muted-foreground h-5 w-5"
-							strokeWidth={2}
-						/>
+					<div className="bg-accent mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
+						<Trophy className="text-primary h-5 w-5" strokeWidth={2} />
 					</div>
-					<h3 className="text-foreground text-base font-medium">
+					<h3 className="text-card-foreground text-base font-medium">
 						No applications
 					</h3>
 					<p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-relaxed">
@@ -258,7 +243,7 @@ export default function ApplicationsPage() {
 						return (
 							<div
 								key={app._id}
-								className="border-border bg-card hover:border-foreground/20 rounded-2xl border p-5 transition-colors"
+								className="border-border bg-card hover:border-ring/50 rounded-2xl border p-5 transition-colors"
 							>
 								<div className="flex items-start gap-4">
 									<div
@@ -276,7 +261,7 @@ export default function ApplicationsPage() {
 									<div className="min-w-0 flex-1">
 										<div className="flex flex-wrap items-start justify-between gap-3">
 											<div className="min-w-0">
-												<p className="text-foreground truncate text-base font-medium">
+												<p className="text-card-foreground truncate text-base font-medium">
 													{app.name}
 												</p>
 												<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
@@ -308,10 +293,9 @@ export default function ApplicationsPage() {
 													<>
 														<Button
 															size="sm"
-															variant="ghost"
+															variant="destructive"
 															onClick={() => handleDeny(app._id)}
 															disabled={loading}
-															className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
 														>
 															Deny
 														</Button>
@@ -319,7 +303,6 @@ export default function ApplicationsPage() {
 															size="sm"
 															onClick={() => handleApprove(app._id)}
 															disabled={loading}
-															className="bg-chart-5 hover:bg-chart-5/90 rounded-full text-white"
 														>
 															Approve
 														</Button>
@@ -330,18 +313,22 @@ export default function ApplicationsPage() {
 														{format(new Date(app.reviewedAt), 'MMM d')}
 													</span>
 												)}
-												<Link
-													href={`/admin/applications/${app._id}`}
+												<Button
+													asChild
+													size="icon"
+													variant="ghost"
 													aria-label="View application details"
 												>
-													<Button size="icon" variant="ghost" className="rounded-full">
+													<Link href={`/admin/applications/${app._id}`}>
 														<ChevronRight className="h-4 w-4" />
-													</Button>
-												</Link>
+													</Link>
+												</Button>
 											</div>
 										</div>
 
-										<p className="text-foreground mt-3 text-sm">{app.race}</p>
+										<p className="text-card-foreground mt-3 text-sm">
+											{app.race}
+										</p>
 										<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 text-xs">
 											{app.raceDate && (
 												<span>
@@ -359,12 +346,18 @@ export default function ApplicationsPage() {
 										{(app.firstRace || app.wantsMentor) && (
 											<div className="mt-3 flex flex-wrap gap-2">
 												{app.firstRace && (
-													<Badge variant="outline" className="text-xs font-normal">
+													<Badge
+														variant="outline"
+														className="text-xs font-normal"
+													>
 														First race
 													</Badge>
 												)}
 												{app.wantsMentor && (
-													<Badge variant="outline" className="text-xs font-normal">
+													<Badge
+														variant="outline"
+														className="text-xs font-normal"
+													>
 														<Heart className="mr-1 h-3 w-3" />
 														Wants mentor
 													</Badge>
@@ -381,15 +374,11 @@ export default function ApplicationsPage() {
 
 			{queryStatus === 'CanLoadMore' && (
 				<div className="mt-6 flex justify-center">
-					<Button
-						variant="outline"
-						onClick={() => loadMore(50)}
-						className="rounded-full px-6"
-					>
+					<Button variant="outline" onClick={() => loadMore(50)}>
 						Load more
 					</Button>
 				</div>
 			)}
-		</div>
+		</AdminPage>
 	)
 }

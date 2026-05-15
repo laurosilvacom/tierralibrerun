@@ -5,6 +5,12 @@ import React from 'react'
 import { AdminSidebarNav } from '@/components/admin/sidebar-nav'
 import { AuthButton } from '@/components/auth-button'
 import { Button } from '@/components/ui/button'
+import {
+	Sidebar,
+	SidebarHeader,
+	SidebarInset,
+	SidebarProvider,
+} from '@/components/ui/sidebar'
 import { isAdmin } from '@/lib/auth'
 
 function AccessDenied() {
@@ -18,7 +24,7 @@ function AccessDenied() {
 					This area is for admins only.
 				</p>
 				<div className="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
-					<Button asChild size="lg" className="rounded-full px-8 text-base">
+					<Button asChild size="lg">
 						<Link href="/">Back home</Link>
 					</Button>
 					<AuthButton
@@ -26,7 +32,6 @@ function AccessDenied() {
 						label="Sign in"
 						variant="ghost"
 						size="lg"
-						className="rounded-full px-8 text-base"
 					/>
 				</div>
 			</div>
@@ -45,13 +50,21 @@ export default async function AdminLayout({
 	if (!(await isAdmin())) return <AccessDenied />
 
 	return (
-		<div className="bg-background min-h-[calc(100dvh-4rem)]">
-			<aside className="border-border/60 fixed inset-y-0 left-0 z-10 hidden w-56 border-r pt-16 md:block">
+		<SidebarProvider>
+			<Sidebar>
+				<SidebarHeader>
+					<p className="text-sidebar-foreground text-sm font-semibold">
+						Admin dashboard
+					</p>
+					<p className="text-sidebar-foreground/65 text-xs">Tierra Libre Run</p>
+				</SidebarHeader>
 				<AdminSidebarNav />
-			</aside>
-			<div className="md:pl-56">
-				<div className="mx-auto max-w-4xl px-6 py-10 md:py-14">{children}</div>
-			</div>
-		</div>
+			</Sidebar>
+			<SidebarInset>
+				<div className="mx-auto w-full max-w-5xl px-6 py-10 md:py-14">
+					{children}
+				</div>
+			</SidebarInset>
+		</SidebarProvider>
 	)
 }

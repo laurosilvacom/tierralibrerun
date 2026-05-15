@@ -18,7 +18,7 @@ import {
 } from '@/components/ui/alert-dialog'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
-import  { type Id } from '@/convex/_generated/dataModel'
+import { type Id } from '@/convex/_generated/dataModel'
 
 export function DeleteUser({ userId }: { userId: Id<'users'> }) {
 	const remove = useMutation(api.users.remove)
@@ -41,13 +41,8 @@ export function DeleteUser({ userId }: { userId: Id<'users'> }) {
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger asChild>
-				<Button
-					size="sm"
-					variant="ghost"
-					disabled={loading}
-					className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
-				>
-					<Trash2 className="mr-1 h-4 w-4" />
+				<Button size="sm" variant="destructive" disabled={loading}>
+					<Trash2 className="h-4 w-4" />
 					Delete user
 				</Button>
 			</AlertDialogTrigger>
@@ -60,13 +55,8 @@ export function DeleteUser({ userId }: { userId: Id<'users'> }) {
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel className="rounded-full">
-						Cancel
-					</AlertDialogCancel>
-					<AlertDialogAction
-						onClick={handleDelete}
-						className="bg-destructive hover:bg-destructive/90 rounded-full"
-					>
+					<AlertDialogCancel>Cancel</AlertDialogCancel>
+					<AlertDialogAction variant="destructive" onClick={handleDelete}>
 						Delete
 					</AlertDialogAction>
 				</AlertDialogFooter>
