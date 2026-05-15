@@ -31,16 +31,22 @@ export function LimitExemptToggle({
 	}
 
 	return (
-		<div className="flex items-center gap-2">
+		<div className="flex items-start gap-3">
 			<Switch
 				id="exempt"
 				checked={currentValue}
 				onCheckedChange={handleToggle}
 				disabled={loading}
+				className="mt-0.5"
 			/>
-			<Label htmlFor="exempt" className="text-sm">
-				Exempt from 6-month application limit
-			</Label>
+			<div>
+				<Label htmlFor="exempt" className="text-sm font-medium">
+					Exempt from application limit
+				</Label>
+				<p className="text-muted-foreground mt-1 text-xs leading-relaxed">
+					Lets this user apply more than once every six months.
+				</p>
+			</div>
 		</div>
 	)
 }

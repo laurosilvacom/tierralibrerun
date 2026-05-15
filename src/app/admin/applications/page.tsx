@@ -6,40 +6,91 @@ import {
 	usePaginatedQuery,
 	useQuery,
 } from 'convex/react'
-import { format, formatDistanceToNow } from 'date-fns'
+import { formatDistanceToNow, format } from 'date-fns'
 import {
-	CheckCircle,
-	XCircle,
+	Check,
 	Clock,
+	X,
 	ChevronRight,
-	Trophy,
-	Calendar,
-	MapPin,
 	Heart,
+	Trophy,
 } from 'lucide-react'
 import Link from 'next/link'
-import { useSearchParams, useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { api } from '@/convex/_generated/api'
 import { type Id } from '@/convex/_generated/dataModel'
+import { cn } from '@/lib/utils'
 
 type Status = 'PENDING' | 'APPROVED' | 'DENIED'
 type TabKey = 'all' | Status
 
-const TABS: { key: TabKey; label: string }[] = [
-	{ key: 'all', label: 'All' },
-	{ key: 'PENDING', label: 'Pending' },
-	{ key: 'APPROVED', label: 'Approved' },
-	{ key: 'DENIED', label: 'Denied' },
-]
+const STATUS_CONFIG: Record<
+	Status,
+	{
+		label: string
+		icon: typeof Clock
+		iconWrap: string
+		iconColor: string
+		dotColor: string
+		textColor: string
+	}
+> = {
+	PENDING: {
+		label: 'Pending',
+		icon: Clock,
+		iconWrap: 'bg-primary/10',
+		iconColor: 'text-primary',
+		dotColor: 'bg-primary',
+		textColor: 'text-primary',
+	},
+	APPROVED: {
+		label: 'Approved',
+		icon: Check,
+		iconWrap: 'bg-chart-5/10',
+		iconColor: 'text-chart-5',
+		dotColor: 'bg-chart-5',
+		textColor: 'text-chart-5',
+	},
+	DENIED: {
+		label: 'Not selected',
+		icon: X,
+		iconWrap: 'bg-muted',
+		iconColor: 'text-muted-foreground',
+		dotColor: 'bg-muted-foreground',
+		textColor: 'text-muted-foreground',
+	},
+}
 
-const STATUS_STYLE: Record<Status, string> = {
-	PENDING: 'bg-amber-50 text-amber-700 border-amber-200',
-	APPROVED: 'bg-green-50 text-green-700 border-green-200',
-	DENIED: 'bg-red-50 text-red-700 border-red-200',
+function MetricCell({
+	label,
+	value,
+	highlight,
+}: {
+	label: string
+	value: number | undefined
+	highlight?: 'primary' | 'chart-5'
+}) {
+	const tone = value && value > 0 ? highlight : undefined
+	return (
+		<div className="p-4 md:p-5">
+			<p
+				className={cn(
+					'text-2xl font-semibold tracking-tight tabular-nums md:text-3xl',
+					tone === 'primary' && 'text-primary',
+					tone === 'chart-5' && 'text-chart-5',
+					!tone && 'text-foreground',
+				)}
+			>
+				{value ?? '—'}
+			</p>
+			<p className="text-muted-foreground mt-1 text-xs font-medium">{label}</p>
+		</div>
+	)
 }
 
 export default function ApplicationsPage() {
@@ -84,13 +135,10 @@ export default function ApplicationsPage() {
 	const approve = useMutation(api.applications.approve)
 	const deny = useMutation(api.applications.deny)
 
-	function setTab(tab: TabKey) {
+	function setTab(tab: string) {
 		const params = new URLSearchParams(searchParams.toString())
-		if (tab === 'all') {
-			params.delete('status')
-		} else {
-			params.set('status', tab)
-		}
+		if (tab === 'all') params.delete('status')
+		else params.set('status', tab)
 		router.replace(`/admin/applications?${params.toString()}`)
 	}
 
@@ -126,176 +174,204 @@ export default function ApplicationsPage() {
 		}
 	}
 
-	const countFor = (tab: TabKey): number | undefined => {
-		if (!counts) return undefined
-		if (tab === 'all') return counts.total
-		if (tab === 'PENDING') return counts.pending
-		if (tab === 'APPROVED') return counts.approved
-		if (tab === 'DENIED') return counts.denied
-		return undefined
-	}
+	const isLoading = isConvexAuthLoading || queryStatus === 'LoadingFirstPage'
 
 	return (
-		<div className="space-y-6">
-			<div>
-				<h1 className="text-2xl font-bold">Applications</h1>
-				<p className="text-muted-foreground mt-1 text-sm">
-					{counts
-						? `${counts.total} total — ${counts.pending} pending, ${counts.approved} approved, ${counts.denied} denied`
-						: 'Loading counts...'}
+		<div className="animate-fade-in-up">
+			{/* Header */}
+			<header className="mb-10">
+				<p className="text-muted-foreground text-sm font-medium">Admin</p>
+				<h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
+					Applications.
+				</h1>
+				<p className="text-muted-foreground mt-2 text-base leading-relaxed md:text-lg">
+					Review, approve, and track race funding requests.
 				</p>
+			</header>
+
+			{/* Metrics */}
+			<div className="border-border bg-card divide-border mb-10 grid grid-cols-4 divide-x rounded-2xl border">
+				<MetricCell label="Total" value={counts?.total} />
+				<MetricCell
+					label="Pending"
+					value={counts?.pending}
+					highlight="primary"
+				/>
+				<MetricCell
+					label="Approved"
+					value={counts?.approved}
+					highlight="chart-5"
+				/>
+				<MetricCell label="Not selected" value={counts?.denied} />
 			</div>
 
 			{/* Tabs */}
-			<div className="flex gap-1 rounded-lg border p-1">
-				{TABS.map((tab) => {
-					const count = countFor(tab.key)
-					const isActive = activeTab === tab.key
-					return (
-						<button
-							key={tab.key}
-							onClick={() => setTab(tab.key)}
-							className={`flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
-								isActive
-									? 'bg-foreground text-background'
-									: 'text-muted-foreground hover:text-foreground hover:bg-muted'
-							}`}
-						>
-							{tab.label}
-							{count !== undefined && (
-								<span
-									className={`rounded-full px-1.5 py-0.5 text-xs ${
-										isActive
-											? 'bg-background/20 text-background'
-											: 'bg-muted text-muted-foreground'
-									}`}
-								>
-									{count}
-								</span>
-							)}
-						</button>
-					)
-				})}
-			</div>
+			<Tabs value={activeTab} onValueChange={setTab} className="mb-6">
+				<TabsList>
+					<TabsTrigger value="all">All</TabsTrigger>
+					<TabsTrigger value="PENDING">Pending</TabsTrigger>
+					<TabsTrigger value="APPROVED">Approved</TabsTrigger>
+					<TabsTrigger value="DENIED">Not selected</TabsTrigger>
+				</TabsList>
+			</Tabs>
 
 			{/* List */}
-			{isConvexAuthLoading || queryStatus === 'LoadingFirstPage' ? (
+			{isLoading ? (
 				<div className="space-y-3">
-					{[...Array(5)].map((_, i) => (
-						<div key={i} className="bg-card h-20 animate-pulse rounded-xl" />
+					{[...Array(4)].map((_, i) => (
+						<div
+							key={i}
+							className="bg-muted h-28 animate-pulse rounded-2xl"
+						/>
 					))}
 				</div>
 			) : !isConvexAuthenticated ? (
-				<div className="text-muted-foreground py-24 text-center">
+				<div className="text-muted-foreground py-24 text-center text-sm">
 					Refresh the page to reconnect your admin session.
 				</div>
 			) : results.length === 0 ? (
-				<div className="text-muted-foreground flex flex-col items-center justify-center py-24 text-center">
-					<Trophy className="mb-4 h-12 w-12 opacity-20" />
-					<p className="text-lg font-medium">No applications</p>
-					<p className="text-sm">
+				<div className="border-border bg-card rounded-2xl border p-12 text-center">
+					<div className="bg-muted mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
+						<Trophy
+							className="text-muted-foreground h-5 w-5"
+							strokeWidth={2}
+						/>
+					</div>
+					<h3 className="text-foreground text-base font-medium">
+						No applications
+					</h3>
+					<p className="text-muted-foreground mx-auto mt-2 max-w-sm text-sm leading-relaxed">
 						{activeTab === 'all'
 							? 'No applications have been submitted yet.'
-							: `No ${activeTab.toLowerCase()} applications.`}
+							: `No ${STATUS_CONFIG[activeTab as Status].label.toLowerCase()} applications.`}
 					</p>
 				</div>
 			) : (
-				<div className="divide-y rounded-xl border">
+				<div className="space-y-3">
 					{results.map((app) => {
-						const isLoading = actionLoading === app._id
-						const appStatus = app.status as Status
+						const config =
+							STATUS_CONFIG[app.status as Status] ?? STATUS_CONFIG.PENDING
+						const Icon = config.icon
+						const loading = actionLoading === app._id
+						const isPending = app.status === 'PENDING'
+
 						return (
 							<div
 								key={app._id}
-								className="hover:bg-muted/30 flex items-center gap-4 px-4 py-4 transition-colors"
+								className="border-border bg-card hover:border-foreground/20 rounded-2xl border p-5 transition-colors"
 							>
-								<div className="min-w-0 flex-1">
-									<div className="flex items-center gap-2">
-										<span className="truncate font-medium">{app.name}</span>
-										<span
-											className={`rounded-full border px-2 py-0.5 text-xs font-medium ${STATUS_STYLE[appStatus]}`}
-										>
-											{appStatus}
-										</span>
-										{app.firstRace && (
-											<Badge variant="outline" className="text-xs">
-												First race
-											</Badge>
+								<div className="flex items-start gap-4">
+									<div
+										className={cn(
+											'flex h-10 w-10 shrink-0 items-center justify-center rounded-full',
+											config.iconWrap,
 										)}
-										{app.wantsMentor && (
-											<Badge variant="outline" className="text-xs">
-												<Heart className="mr-1 h-3 w-3" />
-												Mentor
-											</Badge>
-										)}
+									>
+										<Icon
+											className={cn('h-5 w-5', config.iconColor)}
+											strokeWidth={2.5}
+										/>
 									</div>
-									<div className="text-muted-foreground mt-0.5 flex items-center gap-3 text-sm">
-										<span className="flex items-center gap-1 truncate">
-											<Trophy className="h-3 w-3 shrink-0" />
-											{app.race}
-										</span>
-										{app.raceDate && (
-											<>
-												<span>·</span>
-												<span className="flex shrink-0 items-center gap-1">
-													<Calendar className="h-3 w-3" />
+
+									<div className="min-w-0 flex-1">
+										<div className="flex flex-wrap items-start justify-between gap-3">
+											<div className="min-w-0">
+												<p className="text-foreground truncate text-base font-medium">
+													{app.name}
+												</p>
+												<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 gap-y-1 text-xs">
+													<span
+														className={cn(
+															'flex items-center gap-1.5 font-medium',
+															config.textColor,
+														)}
+													>
+														<span
+															className={cn(
+																'h-1.5 w-1.5 rounded-full',
+																config.dotColor,
+															)}
+														/>
+														{config.label}
+													</span>
+													<span aria-hidden>·</span>
+													<span>
+														{formatDistanceToNow(new Date(app._creationTime), {
+															addSuffix: true,
+														})}
+													</span>
+												</div>
+											</div>
+
+											<div className="flex shrink-0 items-center gap-2">
+												{isPending && (
+													<>
+														<Button
+															size="sm"
+															variant="ghost"
+															onClick={() => handleDeny(app._id)}
+															disabled={loading}
+															className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
+														>
+															Deny
+														</Button>
+														<Button
+															size="sm"
+															onClick={() => handleApprove(app._id)}
+															disabled={loading}
+															className="bg-chart-5 hover:bg-chart-5/90 rounded-full text-white"
+														>
+															Approve
+														</Button>
+													</>
+												)}
+												{!isPending && app.reviewedAt && (
+													<span className="text-muted-foreground text-xs">
+														{format(new Date(app.reviewedAt), 'MMM d')}
+													</span>
+												)}
+												<Link
+													href={`/admin/applications/${app._id}`}
+													aria-label="View application details"
+												>
+													<Button size="icon" variant="ghost" className="rounded-full">
+														<ChevronRight className="h-4 w-4" />
+													</Button>
+												</Link>
+											</div>
+										</div>
+
+										<p className="text-foreground mt-3 text-sm">{app.race}</p>
+										<div className="text-muted-foreground mt-1 flex flex-wrap items-center gap-x-2 text-xs">
+											{app.raceDate && (
+												<span>
 													{format(new Date(app.raceDate), 'MMM d, yyyy')}
 												</span>
-											</>
-										)}
-										{app.raceLocation && (
-											<>
-												<span>·</span>
-												<span className="flex shrink-0 items-center gap-1">
-													<MapPin className="h-3 w-3" />
-													{app.raceLocation}
-												</span>
-											</>
-										)}
-										<span>·</span>
-										<span className="flex shrink-0 items-center gap-1">
-											<Clock className="h-3 w-3" />
-											{formatDistanceToNow(new Date(app._creationTime), {
-												addSuffix: true,
-											})}
-										</span>
-									</div>
-								</div>
+											)}
+											{app.raceLocation && (
+												<>
+													{app.raceDate && <span aria-hidden>·</span>}
+													<span>{app.raceLocation}</span>
+												</>
+											)}
+										</div>
 
-								<div className="flex shrink-0 items-center gap-2">
-									{appStatus === 'PENDING' && (
-										<>
-											<Button
-												size="sm"
-												variant="outline"
-												onClick={() => handleDeny(app._id)}
-												disabled={isLoading}
-												className="border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700"
-											>
-												<XCircle className="mr-1 h-4 w-4" />
-												Deny
-											</Button>
-											<Button
-												size="sm"
-												onClick={() => handleApprove(app._id)}
-												disabled={isLoading}
-												className="bg-green-600 text-white hover:bg-green-700"
-											>
-												<CheckCircle className="mr-1 h-4 w-4" />
-												Approve
-											</Button>
-										</>
-									)}
-									{appStatus !== 'PENDING' && app.reviewedAt && (
-										<span className="text-muted-foreground text-xs">
-											{format(new Date(app.reviewedAt), 'MMM d')}
-										</span>
-									)}
-									<Link href={`/admin/applications/${app._id}`}>
-										<Button size="sm" variant="ghost">
-											<ChevronRight className="h-4 w-4" />
-										</Button>
-									</Link>
+										{(app.firstRace || app.wantsMentor) && (
+											<div className="mt-3 flex flex-wrap gap-2">
+												{app.firstRace && (
+													<Badge variant="outline" className="text-xs font-normal">
+														First race
+													</Badge>
+												)}
+												{app.wantsMentor && (
+													<Badge variant="outline" className="text-xs font-normal">
+														<Heart className="mr-1 h-3 w-3" />
+														Wants mentor
+													</Badge>
+												)}
+											</div>
+										)}
+									</div>
 								</div>
 							</div>
 						)
@@ -304,8 +380,12 @@ export default function ApplicationsPage() {
 			)}
 
 			{queryStatus === 'CanLoadMore' && (
-				<div className="flex justify-center">
-					<Button variant="outline" onClick={() => loadMore(50)}>
+				<div className="mt-6 flex justify-center">
+					<Button
+						variant="outline"
+						onClick={() => loadMore(50)}
+						className="rounded-full px-6"
+					>
 						Load more
 					</Button>
 				</div>

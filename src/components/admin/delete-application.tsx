@@ -45,9 +45,14 @@ export function DeleteApplication({
 	return (
 		<AlertDialog>
 			<AlertDialogTrigger asChild>
-				<Button size="sm" variant="destructive" disabled={loading}>
+				<Button
+					size="sm"
+					variant="ghost"
+					disabled={loading}
+					className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
+				>
 					<Trash2 className="mr-1 h-4 w-4" />
-					Delete
+					Delete application
 				</Button>
 			</AlertDialogTrigger>
 			<AlertDialogContent>
@@ -58,8 +63,15 @@ export function DeleteApplication({
 					</AlertDialogDescription>
 				</AlertDialogHeader>
 				<AlertDialogFooter>
-					<AlertDialogCancel>Cancel</AlertDialogCancel>
-					<AlertDialogAction onClick={handleDelete}>Delete</AlertDialogAction>
+					<AlertDialogCancel className="rounded-full">
+						Cancel
+					</AlertDialogCancel>
+					<AlertDialogAction
+						onClick={handleDelete}
+						className="bg-destructive hover:bg-destructive/90 rounded-full"
+					>
+						Delete
+					</AlertDialogAction>
 				</AlertDialogFooter>
 			</AlertDialogContent>
 		</AlertDialog>
