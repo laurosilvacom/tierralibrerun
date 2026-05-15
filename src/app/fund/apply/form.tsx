@@ -192,16 +192,22 @@ export default function ApplicationForm({
 	}, [formData])
 
 	useEffect(() => {
-		const saved = sessionStorage.getItem(DRAFT_KEY)
-		if (saved) {
-			try {
+		try {
+			const saved = sessionStorage.getItem(DRAFT_KEY)
+			if (saved) {
 				const parsed = JSON.parse(saved)
 				if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
-					setFormData((prev) => ({ ...prev, ...parsed }))
+					setFormData((prev) => {
+						const merged = { ...prev, ...parsed }
+						// Preserve a URL-prefilled race (set by the race-prefill effect
+						// above, which runs first) over a stale draft.
+						if (prev.race) merged.race = prev.race
+						return merged
+					})
 				}
-			} catch {
-				/* ignore */
 			}
+		} catch {
+			/* ignore */
 		}
 	}, [])
 
@@ -369,6 +375,7 @@ export default function ApplicationForm({
 	}) => (
 		<button
 			type="button"
+			aria-pressed={current === value}
 			onClick={() => onChange(value)}
 			className={cn(
 				'group flex w-full items-center justify-between gap-3 rounded-2xl border px-5 py-4 text-left transition-all',
