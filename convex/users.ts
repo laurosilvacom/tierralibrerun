@@ -30,7 +30,17 @@ export const getOrCreate = mutation({
 			.withIndex('by_clerkId', (q) => q.eq('clerkId', identity.subject))
 			.unique()
 
-		if (existing) return existing
+		if (existing) {
+			await ctx.db.patch(existing._id, {
+				email: identity.email ?? existing.email,
+				updatedAt: Date.now(),
+				...definedFields({
+					name: identity.name ?? undefined,
+					profileImageUrl: identity.pictureUrl ?? undefined,
+				}),
+			})
+			return await ctx.db.get(existing._id)
+		}
 
 		const id = await ctx.db.insert('users', {
 			clerkId: identity.subject,

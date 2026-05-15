@@ -8,6 +8,7 @@ import { ConvexClientProvider } from '@/components/convex-provider'
 import { Footer } from '@/components/site-footer'
 import { Header } from '@/components/site-header'
 import { ThemeProvider } from '@/components/theme-provider'
+import { UserBootstrap } from '@/components/user-bootstrap'
 import { siteConfig, socialConfig } from '@/lib/site'
 import '@/styles/globals.css'
 
@@ -229,6 +230,7 @@ export default function RootLayout({
 				</head>
 				<body className="flex min-h-screen flex-col">
 					<ConvexClientProvider>
+						<UserBootstrap />
 						<ThemeProvider
 							attribute="class"
 							defaultTheme="system"

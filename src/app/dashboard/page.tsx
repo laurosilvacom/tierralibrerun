@@ -5,7 +5,7 @@ import { useConvexAuth, useMutation, useQuery } from 'convex/react'
 import { format } from 'date-fns'
 import { Check, Clock, X, Plus, FileText, ArrowRight } from 'lucide-react'
 import Link from 'next/link'
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { api } from '@/convex/_generated/api'
 import { cn } from '@/lib/utils'
@@ -44,6 +44,9 @@ const STATUS_CONFIG = {
 
 export default function DashboardPage() {
 	const { user, isLoaded } = useUser()
+	const [bootstrapStatus, setBootstrapStatus] = useState<
+		'idle' | 'loading' | 'ready' | 'error'
+	>('idle')
 	const {
 		isAuthenticated: isConvexAuthenticated,
 		isLoading: isConvexAuthLoading,
@@ -51,18 +54,42 @@ export default function DashboardPage() {
 
 	const getOrCreate = useMutation(api.users.getOrCreate)
 	useEffect(() => {
-		if (isLoaded && user && isConvexAuthenticated) {
-			void getOrCreate()
+		if (!isLoaded || isConvexAuthLoading) return
+		if (!user || !isConvexAuthenticated) {
+			setBootstrapStatus('idle')
+			return
 		}
-	}, [isLoaded, user, isConvexAuthenticated, getOrCreate])
+
+		let cancelled = false
+		setBootstrapStatus('loading')
+		void getOrCreate()
+			.then(() => {
+				if (!cancelled) setBootstrapStatus('ready')
+			})
+			.catch((error: unknown) => {
+				console.error('Failed to bootstrap dashboard user', error)
+				if (!cancelled) setBootstrapStatus('error')
+			})
+
+		return () => {
+			cancelled = true
+		}
+	}, [getOrCreate, isConvexAuthenticated, isConvexAuthLoading, isLoaded, user])
 
 	const applications = useQuery(
 		api.applications.listMine,
-		isConvexAuthenticated ? {} : 'skip',
+		isConvexAuthenticated && bootstrapStatus === 'ready' ? {} : 'skip',
 	)
 
 	/* Loading */
-	if (!isLoaded || isConvexAuthLoading || applications === undefined) {
+	if (
+		!isLoaded ||
+		isConvexAuthLoading ||
+		bootstrapStatus === 'loading' ||
+		(isConvexAuthenticated &&
+			bootstrapStatus === 'ready' &&
+			applications === undefined)
+	) {
 		return (
 			<div className="bg-background min-h-[calc(100dvh-4rem)]">
 				<div className="mx-auto max-w-3xl px-6 py-10 md:py-16">
@@ -72,6 +99,21 @@ export default function DashboardPage() {
 					<div className="bg-muted mt-10 h-24 w-full animate-pulse rounded-2xl" />
 					<div className="bg-muted mt-10 h-6 w-32 animate-pulse rounded" />
 					<div className="bg-muted mt-4 h-28 w-full animate-pulse rounded-2xl" />
+				</div>
+			</div>
+		)
+	}
+
+	if (bootstrapStatus === 'error') {
+		return (
+			<div className="bg-background flex min-h-[calc(100dvh-4rem)] flex-col items-center justify-center px-6 py-12">
+				<div className="animate-fade-in-up mx-auto w-full max-w-md text-center">
+					<h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
+						We could not finish setting up your dashboard.
+					</h1>
+					<p className="text-muted-foreground mt-3 text-base leading-relaxed md:text-lg">
+						Refresh the page to reconnect your authenticated session.
+					</p>
 				</div>
 			</div>
 		)
@@ -93,13 +135,14 @@ export default function DashboardPage() {
 		)
 	}
 
+	const dashboardApplications = applications ?? []
 	const fullName =
 		`${user?.firstName ?? ''} ${user?.lastName ?? ''}`.trim() || 'Athlete'
-	const applicationCount = applications.length
-	const pendingCount = applications.filter(
+	const applicationCount = dashboardApplications.length
+	const pendingCount = dashboardApplications.filter(
 		(app) => app.status === 'PENDING',
 	).length
-	const approvedCount = applications.filter(
+	const approvedCount = dashboardApplications.filter(
 		(app) => app.status === 'APPROVED',
 	).length
 
@@ -171,7 +214,7 @@ export default function DashboardPage() {
 						</Button>
 					</div>
 
-					{applications.length === 0 ? (
+					{dashboardApplications.length === 0 ? (
 						<div className="border-border bg-card rounded-2xl border p-10 text-center">
 							<div className="bg-accent mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
 								<FileText className="text-primary h-5 w-5" strokeWidth={2} />
@@ -194,7 +237,7 @@ export default function DashboardPage() {
 						</div>
 					) : (
 						<div className="space-y-3">
-							{applications.map(
+							{dashboardApplications.map(
 								(app: {
 									_id: string
 									status: string

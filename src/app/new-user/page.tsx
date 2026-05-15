@@ -1,5 +1,6 @@
 import { auth } from '@clerk/nextjs/server'
 import { redirect } from 'next/navigation'
+import { ensureConvexUserForCurrentSession } from '@/lib/convex-user'
 import { resolveOnboardingReturnTarget } from '@/lib/routing'
 
 export const dynamic = 'force-dynamic'
@@ -24,5 +25,6 @@ export default async function NewUserPage(props: {
 		)
 	}
 
+	await ensureConvexUserForCurrentSession()
 	redirect(next ?? '/dashboard')
 }
