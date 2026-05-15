@@ -10,19 +10,26 @@ import {
 	Heart,
 	Mail,
 	MapPin,
+	Save,
 	Trophy,
 	X,
 } from 'lucide-react'
 import Link from 'next/link'
 import { use, useState } from 'react'
 import { toast } from 'sonner'
+import {
+	AdminPage,
+	AdminPageHeader,
+	AdminSectionCard,
+} from '@/components/admin/admin-page'
 import { DeleteApplication } from '@/components/admin/delete-application'
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Textarea } from '@/components/ui/textarea'
 import { api } from '@/convex/_generated/api'
 import { type Id } from '@/convex/_generated/dataModel'
-import { cn } from '@/lib/utils'
+import { cn, initialsFromName } from '@/lib/utils'
 
 type Status = 'PENDING' | 'APPROVED' | 'DENIED'
 
@@ -48,32 +55,15 @@ const STATUS_CONFIG: Record<
 		icon: Check,
 		dotColor: 'bg-chart-5',
 		textColor: 'text-chart-5',
-		bgColor: 'bg-chart-5/10',
+		bgColor: 'bg-chart-5/15',
 	},
 	DENIED: {
 		label: 'Not selected',
 		icon: X,
-		dotColor: 'bg-muted-foreground',
-		textColor: 'text-muted-foreground',
-		bgColor: 'bg-muted',
+		dotColor: 'bg-destructive',
+		textColor: 'text-destructive',
+		bgColor: 'bg-destructive/10',
 	},
-}
-
-function SectionCard({
-	title,
-	children,
-}: {
-	title: string
-	children: React.ReactNode
-}) {
-	return (
-		<div className="border-border bg-card rounded-2xl border p-6">
-			<h2 className="text-foreground mb-4 text-base font-semibold tracking-tight">
-				{title}
-			</h2>
-			<div className="space-y-5">{children}</div>
-		</div>
-	)
 }
 
 function Essay({ label, content }: { label: string; content?: string }) {
@@ -83,7 +73,7 @@ function Essay({ label, content }: { label: string; content?: string }) {
 			<p className="text-muted-foreground mb-1.5 text-xs font-medium">
 				{label}
 			</p>
-			<p className="text-foreground text-sm leading-relaxed whitespace-pre-line">
+			<p className="text-card-foreground text-sm leading-relaxed whitespace-pre-line">
 				{content}
 			</p>
 		</div>
@@ -139,9 +129,9 @@ export default function ApplicationDetailPage({
 					Application not found.
 				</p>
 				<div className="mt-6">
-					<Button asChild variant="ghost" className="rounded-full">
+					<Button asChild variant="ghost">
 						<Link href="/admin/applications">
-							<ArrowLeft className="mr-1 h-4 w-4" />
+							<ArrowLeft className="h-4 w-4" />
 							Back to applications
 						</Link>
 					</Button>
@@ -207,27 +197,35 @@ export default function ApplicationDetailPage({
 
 	const config = STATUS_CONFIG[app.status as Status] ?? STATUS_CONFIG.PENDING
 	const isPending = app.status === 'PENDING'
+	const applicantName = app.user?.name ?? app.name
+	const applicantEmail = app.user?.email ?? app.email
 
 	return (
-		<div className="animate-fade-in-up">
-			{/* Back */}
-			<Link
-				href="/admin/applications"
-				className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium"
-			>
-				<ArrowLeft className="h-4 w-4" />
-				Applications
-			</Link>
+		<AdminPage>
+			<div>
+				<Button asChild variant="ghost" size="sm">
+					<Link href="/admin/applications">
+						<ArrowLeft className="h-4 w-4" />
+						Applications
+					</Link>
+				</Button>
+			</div>
 
-			{/* Header */}
-			<header className="mt-6 flex flex-col items-start justify-between gap-6 md:flex-row md:items-end">
-				<div>
-					<div className="flex items-center gap-3">
-						<h1 className="text-foreground text-3xl font-semibold tracking-tight md:text-4xl">
-							{app.name}
-						</h1>
-					</div>
-					<div className="text-muted-foreground mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
+			<AdminPageHeader
+				label="Application"
+				title={applicantName}
+				description={applicantEmail}
+				media={
+					<Avatar className="h-14 w-14">
+						<AvatarImage src={app.user?.profileImageUrl ?? undefined} />
+						<AvatarFallback className="text-base font-medium">
+							{initialsFromName(applicantName)}
+						</AvatarFallback>
+					</Avatar>
+				}
+			>
+				<div className="flex shrink-0 flex-col items-start gap-3 md:items-end">
+					<div className="text-muted-foreground flex flex-wrap items-center gap-x-2 gap-y-1 text-sm">
 						<span
 							className={cn(
 								'inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium',
@@ -235,7 +233,9 @@ export default function ApplicationDetailPage({
 								config.textColor,
 							)}
 						>
-							<span className={cn('h-1.5 w-1.5 rounded-full', config.dotColor)} />
+							<span
+								className={cn('h-1.5 w-1.5 rounded-full', config.dotColor)}
+							/>
 							{config.label}
 						</span>
 						<span>·</span>
@@ -247,42 +247,35 @@ export default function ApplicationDetailPage({
 							</>
 						)}
 					</div>
+					{isPending && (
+						<div className="flex gap-2">
+							<Button
+								variant="destructive"
+								onClick={handleDeny}
+								disabled={!!loading}
+							>
+								<X className="h-4 w-4" />
+								Deny
+							</Button>
+							<Button onClick={handleApprove} disabled={!!loading}>
+								<Check className="h-4 w-4" />
+								Approve
+							</Button>
+						</div>
+					)}
 				</div>
+			</AdminPageHeader>
 
-				{isPending && (
-					<div className="flex shrink-0 gap-2">
-						<Button
-							variant="ghost"
-							onClick={handleDeny}
-							disabled={!!loading}
-							className="text-destructive hover:bg-destructive/10 hover:text-destructive rounded-full"
-						>
-							Deny
-						</Button>
-						<Button
-							onClick={handleApprove}
-							disabled={!!loading}
-							className="bg-chart-5 hover:bg-chart-5/90 rounded-full text-white"
-						>
-							Approve
-						</Button>
-					</div>
-				)}
-			</header>
-
-			<div className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-3">
+			<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 				{/* Main */}
 				<div className="space-y-5 lg:col-span-2">
-					<SectionCard title="About them">
+					<AdminSectionCard title="About them">
 						<Essay label="Why this race" content={app.reason} />
-						<Essay
-							label="Access to trail running"
-							content={app.experience}
-						/>
+						<Essay label="Access to trail running" content={app.experience} />
 						<Essay label="Goals" content={app.goals} />
-					</SectionCard>
+					</AdminSectionCard>
 
-					<SectionCard title="Community impact">
+					<AdminSectionCard title="Community impact">
 						<Essay
 							label="Community contribution"
 							content={app.communityContribution}
@@ -295,21 +288,23 @@ export default function ApplicationDetailPage({
 							label="Additional assistance needs"
 							content={app.additionalAssistanceNeeds}
 						/>
-					</SectionCard>
+					</AdminSectionCard>
 				</div>
 
 				{/* Sidebar */}
 				<div className="space-y-5">
-					<SectionCard title="Applicant">
+					<AdminSectionCard title="Applicant">
 						<div className="space-y-3 text-sm">
 							<div className="flex items-center gap-2">
 								<Mail className="text-muted-foreground h-4 w-4 shrink-0" />
-								<span className="break-words">{app.email}</span>
+								<span className="break-words">{applicantEmail}</span>
 							</div>
 							{app.age > 0 && (
 								<div className="text-muted-foreground flex items-center gap-2 text-xs">
 									<span>Age</span>
-									<span className="text-foreground text-sm">{app.age}</span>
+									<span className="text-card-foreground text-sm">
+										{app.age}
+									</span>
 								</div>
 							)}
 							{app.zipcode && app.zipcode !== 'Not specified' && (
@@ -325,12 +320,11 @@ export default function ApplicationDetailPage({
 									BIPOC
 								</Badge>
 							)}
-							{app.genderIdentity &&
-								app.genderIdentity !== 'Not specified' && (
-									<Badge variant="outline" className="text-xs font-normal">
-										{app.genderIdentity}
-									</Badge>
-								)}
+							{app.genderIdentity && app.genderIdentity !== 'Not specified' && (
+								<Badge variant="outline" className="text-xs font-normal">
+									{app.genderIdentity}
+								</Badge>
+							)}
 							{app.firstRace && (
 								<Badge variant="outline" className="text-xs font-normal">
 									First trail race
@@ -343,9 +337,9 @@ export default function ApplicationDetailPage({
 								</Badge>
 							)}
 						</div>
-					</SectionCard>
+					</AdminSectionCard>
 
-					<SectionCard title="Race">
+					<AdminSectionCard title="Race">
 						<div className="space-y-3 text-sm">
 							<div className="flex items-start gap-2">
 								<Trophy className="text-muted-foreground mt-0.5 h-4 w-4 shrink-0" />
@@ -364,9 +358,9 @@ export default function ApplicationDetailPage({
 								</div>
 							)}
 						</div>
-					</SectionCard>
+					</AdminSectionCard>
 
-					<SectionCard title="Submitted">
+					<AdminSectionCard title="Submitted">
 						<p className="text-muted-foreground text-sm">
 							{format(new Date(app._creationTime), 'MMMM d, yyyy · h:mm a')}
 						</p>
@@ -375,9 +369,9 @@ export default function ApplicationDetailPage({
 								Reviewed {format(new Date(app.reviewedAt), 'MMM d, yyyy')}
 							</p>
 						)}
-					</SectionCard>
+					</AdminSectionCard>
 
-					<SectionCard title="Admin notes">
+					<AdminSectionCard title="Admin controls">
 						<Textarea
 							placeholder="Notes on this application…"
 							value={notes ?? app.adminNotes ?? ''}
@@ -390,17 +384,14 @@ export default function ApplicationDetailPage({
 							variant="outline"
 							onClick={handleSaveNotes}
 							disabled={loading === 'notes'}
-							className="w-full rounded-full"
 						>
+							<Save className="h-4 w-4" />
 							Save notes
 						</Button>
-					</SectionCard>
-
-					<div className="px-2">
 						<DeleteApplication id={app._id} />
-					</div>
+					</AdminSectionCard>
 				</div>
 			</div>
-		</div>
+		</AdminPage>
 	)
 }

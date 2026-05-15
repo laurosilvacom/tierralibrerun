@@ -2,16 +2,14 @@
 
 import { useConvexAuth, useQuery } from 'convex/react'
 import { format } from 'date-fns'
-import {
-	ArrowLeft,
-	Check,
-	ChevronRight,
-	Clock,
-	Mail,
-	X,
-} from 'lucide-react'
+import { ArrowLeft, Check, ChevronRight, Clock, Mail, X } from 'lucide-react'
 import Link from 'next/link'
 import { use } from 'react'
+import {
+	AdminPage,
+	AdminPageHeader,
+	AdminSectionCard,
+} from '@/components/admin/admin-page'
 import { DeleteUser } from '@/components/admin/delete-user'
 import { LimitExemptToggle } from '@/components/admin/limit-exempt'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
@@ -42,8 +40,8 @@ const STATUS_CONFIG: Record<
 	DENIED: {
 		label: 'Not selected',
 		icon: X,
-		textColor: 'text-muted-foreground',
-		dotColor: 'bg-muted-foreground',
+		textColor: 'text-destructive',
+		dotColor: 'bg-destructive',
 	},
 }
 
@@ -55,23 +53,6 @@ function initials(name?: string | null) {
 		.join('')
 		.toUpperCase()
 		.slice(0, 2)
-}
-
-function SectionCard({
-	title,
-	children,
-}: {
-	title: string
-	children: React.ReactNode
-}) {
-	return (
-		<div className="border-border bg-card rounded-2xl border p-6">
-			<h2 className="text-foreground mb-4 text-base font-semibold tracking-tight">
-				{title}
-			</h2>
-			{children}
-		</div>
-	)
 }
 
 export default function AdminUserDetailPage({
@@ -116,9 +97,9 @@ export default function AdminUserDetailPage({
 			<div className="animate-fade-in-up py-24 text-center">
 				<p className="text-foreground text-lg font-medium">User not found.</p>
 				<div className="mt-6">
-					<Button asChild variant="ghost" className="rounded-full">
+					<Button asChild variant="ghost">
 						<Link href="/admin/users">
-							<ArrowLeft className="mr-1 h-4 w-4" />
+							<ArrowLeft className="h-4 w-4" />
 							Back to users
 						</Link>
 					</Button>
@@ -128,38 +109,34 @@ export default function AdminUserDetailPage({
 	}
 
 	return (
-		<div className="animate-fade-in-up">
-			{/* Back */}
-			<Link
-				href="/admin/users"
-				className="text-muted-foreground hover:text-foreground inline-flex items-center gap-1 text-sm font-medium"
-			>
-				<ArrowLeft className="h-4 w-4" />
-				Users
-			</Link>
+		<AdminPage>
+			<div>
+				<Button asChild variant="ghost" size="sm">
+					<Link href="/admin/users">
+						<ArrowLeft className="h-4 w-4" />
+						Users
+					</Link>
+				</Button>
+			</div>
 
-			{/* Header */}
-			<header className="mt-6 flex items-center gap-4">
-				<Avatar className="h-14 w-14">
-					<AvatarImage src={user.profileImageUrl ?? undefined} />
-					<AvatarFallback className="text-base font-medium">
-						{initials(user.name)}
-					</AvatarFallback>
-				</Avatar>
-				<div className="min-w-0">
-					<h1 className="text-foreground truncate text-3xl font-semibold tracking-tight md:text-4xl">
-						{user.name ?? 'Unnamed'}
-					</h1>
-					<p className="text-muted-foreground mt-1 truncate text-sm">
-						{user.email}
-					</p>
-				</div>
-			</header>
+			<AdminPageHeader
+				label="User profile"
+				title={user.name ?? 'Unnamed'}
+				description={user.email}
+				media={
+					<Avatar className="h-14 w-14">
+						<AvatarImage src={user.profileImageUrl ?? undefined} />
+						<AvatarFallback className="text-base font-medium">
+							{initials(user.name)}
+						</AvatarFallback>
+					</Avatar>
+				}
+			/>
 
-			<div className="mt-10 grid grid-cols-1 gap-5 lg:grid-cols-3">
+			<div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
 				{/* Main */}
 				<div className="space-y-5 lg:col-span-2">
-					<SectionCard title="Fund applications">
+					<AdminSectionCard title="Fund applications">
 						{!userApps || userApps.length === 0 ? (
 							<p className="text-muted-foreground text-sm">
 								No applications yet.
@@ -180,10 +157,10 @@ export default function AdminUserDetailPage({
 											<Link
 												key={app._id}
 												href={`/admin/applications/${app._id}`}
-												className="hover:bg-muted/40 group flex items-center gap-3 rounded-xl px-3 py-3 transition-colors"
+												className="hover:bg-accent hover:text-accent-foreground group flex items-center gap-3 rounded-md px-3 py-3 transition-colors"
 											>
 												<div className="min-w-0 flex-1">
-													<p className="text-foreground truncate text-sm font-medium">
+													<p className="text-card-foreground truncate text-sm font-medium">
 														{app.race}
 													</p>
 													<div className="text-muted-foreground mt-1 flex items-center gap-2 text-xs">
@@ -210,19 +187,19 @@ export default function AdminUserDetailPage({
 														</span>
 													</div>
 												</div>
-												<ChevronRight className="text-muted-foreground group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
+												<ChevronRight className="text-muted-foreground group-hover:text-accent-foreground h-4 w-4 shrink-0 transition-colors" />
 											</Link>
 										)
 									},
 								)}
 							</div>
 						)}
-					</SectionCard>
+					</AdminSectionCard>
 				</div>
 
 				{/* Sidebar */}
 				<div className="space-y-5">
-					<SectionCard title="Profile">
+					<AdminSectionCard title="Profile">
 						<div className="space-y-3 text-sm">
 							<div className="flex items-center gap-2">
 								<Mail className="text-muted-foreground h-4 w-4 shrink-0" />
@@ -234,13 +211,12 @@ export default function AdminUserDetailPage({
 								</Badge>
 							)}
 							<p className="text-muted-foreground pt-1 text-xs">
-								Joined{' '}
-								{format(new Date(user._creationTime), 'MMMM d, yyyy')}
+								Joined {format(new Date(user._creationTime), 'MMMM d, yyyy')}
 							</p>
 						</div>
-					</SectionCard>
+					</AdminSectionCard>
 
-					<SectionCard title="Admin controls">
+					<AdminSectionCard title="Admin controls">
 						<div className="space-y-5">
 							<LimitExemptToggle
 								userId={user._id}
@@ -248,9 +224,9 @@ export default function AdminUserDetailPage({
 							/>
 							<DeleteUser userId={user._id} />
 						</div>
-					</SectionCard>
+					</AdminSectionCard>
 				</div>
 			</div>
-		</div>
+		</AdminPage>
 	)
 }

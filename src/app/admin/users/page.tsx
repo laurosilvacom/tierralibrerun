@@ -4,6 +4,7 @@ import { useConvexAuth, usePaginatedQuery } from 'convex/react'
 import { format } from 'date-fns'
 import { ChevronRight, Users } from 'lucide-react'
 import Link from 'next/link'
+import { AdminPage, AdminPageHeader } from '@/components/admin/admin-page'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
@@ -33,25 +34,16 @@ export default function UsersPage() {
 	const isLoading = isConvexAuthLoading || status === 'LoadingFirstPage'
 
 	return (
-		<div className="animate-fade-in-up">
-			{/* Header */}
-			<header className="mb-10">
-				<p className="text-muted-foreground text-sm font-medium">Admin</p>
-				<h1 className="text-foreground mt-1 text-3xl font-semibold tracking-tight md:text-4xl">
-					Users.
-				</h1>
-				<p className="text-muted-foreground mt-2 text-base leading-relaxed md:text-lg">
-					Everyone signed in to Tierra Libre Run.
-				</p>
-			</header>
+		<AdminPage>
+			<AdminPageHeader
+				title="Users."
+				description="Everyone signed in to Tierra Libre Run."
+			/>
 
 			{isLoading ? (
 				<div className="space-y-3">
 					{[...Array(5)].map((_, i) => (
-						<div
-							key={i}
-							className="bg-muted h-20 animate-pulse rounded-2xl"
-						/>
+						<div key={i} className="bg-muted h-20 animate-pulse rounded-2xl" />
 					))}
 				</div>
 			) : !isConvexAuthenticated ? (
@@ -60,13 +52,10 @@ export default function UsersPage() {
 				</div>
 			) : results.length === 0 ? (
 				<div className="border-border bg-card rounded-2xl border p-12 text-center">
-					<div className="bg-muted mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
-						<Users
-							className="text-muted-foreground h-5 w-5"
-							strokeWidth={2}
-						/>
+					<div className="bg-accent mx-auto mb-5 flex h-12 w-12 items-center justify-center rounded-full">
+						<Users className="text-primary h-5 w-5" strokeWidth={2} />
 					</div>
-					<h3 className="text-foreground text-base font-medium">
+					<h3 className="text-card-foreground text-base font-medium">
 						No users yet
 					</h3>
 				</div>
@@ -76,7 +65,7 @@ export default function UsersPage() {
 						<Link
 							key={user._id}
 							href={`/admin/users/${user._id}`}
-							className="border-border bg-card hover:border-foreground/20 group flex items-center gap-4 rounded-2xl border p-5 transition-colors"
+							className="border-border bg-card hover:border-ring/50 group flex items-center gap-4 rounded-2xl border p-5 transition-colors"
 						>
 							<Avatar className="h-10 w-10 shrink-0">
 								<AvatarImage src={user.profileImageUrl ?? undefined} />
@@ -87,14 +76,11 @@ export default function UsersPage() {
 
 							<div className="min-w-0 flex-1">
 								<div className="flex flex-wrap items-center gap-2">
-									<p className="text-foreground truncate text-base font-medium">
+									<p className="text-card-foreground truncate text-base font-medium">
 										{user.name ?? 'Unnamed'}
 									</p>
 									{user.fundApplicationLimitExempt && (
-										<Badge
-											variant="outline"
-											className="text-xs font-normal"
-										>
+										<Badge variant="outline" className="text-xs font-normal">
 											Exempt
 										</Badge>
 									)}
@@ -106,12 +92,12 @@ export default function UsersPage() {
 
 							<div className="text-muted-foreground hidden text-right text-xs sm:block">
 								<p>Joined</p>
-								<p className="text-foreground mt-0.5 text-sm font-medium">
+								<p className="text-card-foreground mt-0.5 text-sm font-medium">
 									{format(new Date(user._creationTime), 'MMM d, yyyy')}
 								</p>
 							</div>
 
-							<ChevronRight className="text-muted-foreground group-hover:text-foreground h-4 w-4 shrink-0 transition-colors" />
+							<ChevronRight className="text-muted-foreground group-hover:text-card-foreground h-4 w-4 shrink-0 transition-colors" />
 						</Link>
 					))}
 				</div>
@@ -119,15 +105,11 @@ export default function UsersPage() {
 
 			{status === 'CanLoadMore' && (
 				<div className="mt-6 flex justify-center">
-					<Button
-						variant="outline"
-						onClick={() => loadMore(50)}
-						className="rounded-full px-6"
-					>
+					<Button variant="outline" onClick={() => loadMore(50)}>
 						Load more
 					</Button>
 				</div>
 			)}
-		</div>
+		</AdminPage>
 	)
 }
