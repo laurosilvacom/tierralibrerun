@@ -10,6 +10,7 @@
 
 import type * as applications from "../applications.js";
 import type * as auth from "../auth.js";
+import type * as migrations from "../migrations.js";
 import type * as newsletter from "../newsletter.js";
 import type * as users from "../users.js";
 
@@ -22,6 +23,7 @@ import type {
 declare const fullApi: ApiFromModules<{
   applications: typeof applications;
   auth: typeof auth;
+  migrations: typeof migrations;
   newsletter: typeof newsletter;
   users: typeof users;
 }>;

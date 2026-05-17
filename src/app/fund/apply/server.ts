@@ -11,7 +11,6 @@ export interface SubmitFundApplicationInput {
 	zipcode: string
 	bipocIdentity: boolean
 	genderIdentity: string
-	referralSource: string
 	race: string
 	firstRace: boolean
 	experience: string

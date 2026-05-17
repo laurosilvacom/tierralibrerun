@@ -34,7 +34,6 @@ export default defineSchema({
 		zipcode: v.string(),
 		bipocIdentity: v.boolean(),
 		genderIdentity: v.string(),
-		referralSource: v.string(),
 		// Race
 		race: v.string(),
 		raceDate: v.optional(v.number()),
@@ -46,9 +45,7 @@ export default defineSchema({
 		goals: v.optional(v.string()),
 		communityContribution: v.string(),
 		tierraLibreContribution: v.optional(v.string()),
-		// Support needs
 		additionalAssistanceNeeds: v.optional(v.string()),
-		gearNeeds: v.optional(v.string()),
 		// Mentorship
 		wantsMentor: v.boolean(),
 		mentorGenderPreference: v.optional(v.string()),

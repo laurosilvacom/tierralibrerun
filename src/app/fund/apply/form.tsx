@@ -55,7 +55,6 @@ interface ApplicationFormData {
 	genderIdentity: string
 	age: string
 	zipcode: string
-	referralSource: string
 	race: string
 	firstRace: string
 	reason: string
@@ -69,7 +68,7 @@ interface ApplicationFormData {
 }
 
 const TOTAL_STEPS = 7
-const DRAFT_KEY = 'app-fund-application-draft-v4'
+const DRAFT_KEY = 'app-fund-application-draft-v6'
 
 const CHAR_MIN_STANDARD = 300
 const CHAR_MIN_RACE = 300
@@ -99,16 +98,6 @@ const STEP_SUBTITLES = [
 	'A final look before you submit.',
 ] as const
 
-const REFERRAL_OPTIONS = [
-	'Instagram',
-	'Friend or family',
-	'Trail running event',
-	'Another athlete',
-	'Coach or running club',
-	'Web search',
-	'Other',
-]
-
 const GENDER_OPTIONS = [
 	'Woman',
 	'Man',
@@ -137,7 +126,6 @@ export default function ApplicationForm({
 		genderIdentity: '',
 		age: '',
 		zipcode: '',
-		referralSource: '',
 		race: '',
 		firstRace: '',
 		reason: '',
@@ -229,8 +217,7 @@ export default function ApplicationForm({
 					formData.age &&
 					!isNaN(age) &&
 					age >= 18 &&
-					formData.zipcode?.trim().length >= 3 &&
-					formData.referralSource
+					formData.zipcode?.trim().length >= 3
 				)
 			}
 			case 2:
@@ -248,7 +235,8 @@ export default function ApplicationForm({
 				if (!formData.wantsMentor) return false
 				if (
 					formData.wantsMentor === 'yes' &&
-					formData.tierraLibreContribution.length < CHAR_MIN_MENTOR_DETAIL
+					(formData.tierraLibreContribution.length < CHAR_MIN_MENTOR_DETAIL ||
+						!formData.mentorGenderPreference)
 				) {
 					return false
 				}
@@ -288,7 +276,6 @@ export default function ApplicationForm({
 				genderIdentity: formData.genderIdentity,
 				age: parseInt(formData.age),
 				zipcode: formData.zipcode.trim(),
-				referralSource: formData.referralSource,
 				race: formData.race,
 				firstRace: formData.firstRace === 'yes',
 				experience: formData.experience,
@@ -300,7 +287,7 @@ export default function ApplicationForm({
 				wantsMentor: formData.wantsMentor === 'yes',
 				mentorGenderPreference:
 					formData.wantsMentor === 'yes'
-						? formData.mentorGenderPreference || 'no-preference'
+						? formData.mentorGenderPreference
 						: undefined,
 			})
 
@@ -539,27 +526,6 @@ export default function ApplicationForm({
 								/>
 							</div>
 						</div>
-
-						<div className="space-y-2">
-							<Label htmlFor="referral-source">
-								How did you hear about us?
-							</Label>
-							<Select
-								value={formData.referralSource}
-								onValueChange={(v) => updateField('referralSource', v)}
-							>
-								<SelectTrigger id="referral-source" className="h-11 w-full">
-									<SelectValue placeholder="Select" />
-								</SelectTrigger>
-								<SelectContent>
-									{REFERRAL_OPTIONS.map((opt) => (
-										<SelectItem key={opt} value={opt}>
-											{opt}
-										</SelectItem>
-									))}
-								</SelectContent>
-							</Select>
-						</div>
 					</div>
 				)
 
@@ -721,12 +687,7 @@ export default function ApplicationForm({
 									current={formData.wantsMentor}
 									label="Yes, I'd love a mentor"
 									desc="Connect me with someone who can share advice and encouragement."
-									onChange={(v) => {
-										updateField('wantsMentor', v)
-										if (!formData.mentorGenderPreference) {
-											updateField('mentorGenderPreference', 'no-preference')
-										}
-									}}
+									onChange={(v) => updateField('wantsMentor', v)}
 								/>
 								<ChoiceCard
 									value="no"
@@ -766,31 +727,33 @@ export default function ApplicationForm({
 									/>
 								</div>
 
-								<div className="space-y-2">
-									<Label htmlFor="mentorGenderPreference">
-										Mentor preference
-									</Label>
-									<Select
-										value={formData.mentorGenderPreference}
-										onValueChange={(v) =>
-											updateField('mentorGenderPreference', v)
-										}
-									>
-										<SelectTrigger
-											id="mentorGenderPreference"
-											className="h-11 w-full"
-										>
-											<SelectValue placeholder="Select preference" />
-										</SelectTrigger>
-										<SelectContent>
-											<SelectItem value="no-preference">
-												No preference
-											</SelectItem>
-											<SelectItem value="same-gender">
-												Same gender identity
-											</SelectItem>
-										</SelectContent>
-									</Select>
+								<div className="space-y-3">
+									<div>
+										<p className="text-base font-medium">
+											Do you have a mentor gender preference?
+										</p>
+										<p className="text-muted-foreground mt-1 text-sm leading-relaxed">
+											We use this when pairing athletes with mentors.
+										</p>
+									</div>
+									<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+										<ChoiceCard
+											value="same-gender"
+											current={formData.mentorGenderPreference}
+											label="Same gender identity"
+											onChange={(v) =>
+												updateField('mentorGenderPreference', v)
+											}
+										/>
+										<ChoiceCard
+											value="no-preference"
+											current={formData.mentorGenderPreference}
+											label="No preference"
+											onChange={(v) =>
+												updateField('mentorGenderPreference', v)
+											}
+										/>
+									</div>
 								</div>
 							</div>
 						)}

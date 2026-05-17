@@ -80,6 +80,13 @@ function Essay({ label, content }: { label: string; content?: string }) {
 	)
 }
 
+function formatMentorPreference(value?: string) {
+	if (!value) return null
+	if (value === 'same-gender') return 'Same gender identity'
+	if (value === 'no-preference') return 'No preference'
+	return value
+}
+
 export default function ApplicationDetailPage({
 	params,
 }: {
@@ -199,6 +206,7 @@ export default function ApplicationDetailPage({
 	const isPending = app.status === 'PENDING'
 	const applicantName = app.user?.name ?? app.name
 	const applicantEmail = app.user?.email ?? app.email
+	const mentorPreference = formatMentorPreference(app.mentorGenderPreference)
 
 	return (
 		<AdminPage>
@@ -336,6 +344,11 @@ export default function ApplicationDetailPage({
 									Wants mentor
 								</Badge>
 							)}
+							{mentorPreference && (
+								<Badge variant="outline" className="text-xs font-normal">
+									{mentorPreference}
+								</Badge>
+							)}
 						</div>
 					</AdminSectionCard>
 
@@ -370,6 +383,11 @@ export default function ApplicationDetailPage({
 						{app.reviewedAt && (
 							<p className="text-muted-foreground text-sm">
 								Reviewed {format(new Date(app.reviewedAt), 'MMM d, yyyy')}
+							</p>
+						)}
+						{app.reviewedByClerkId && (
+							<p className="text-muted-foreground break-all text-xs">
+								Reviewer Clerk ID: {app.reviewedByClerkId}
 							</p>
 						)}
 					</AdminSectionCard>
