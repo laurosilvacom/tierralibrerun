@@ -53,9 +53,6 @@ const envSchema = z.object({
 	NEXT_PUBLIC_SANITY_API_VERSION: z.string().default('2025-06-01'),
 	SANITY_API_TOKEN: z.string().optional(),
 
-	// Email
-	RESEND_API_KEY: z.string().optional(),
-
 	// Admin
 	ADMIN_EMAILS: z.string().optional(),
 })

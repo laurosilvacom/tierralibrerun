@@ -1,5 +1,6 @@
 import { paginationOptsValidator } from 'convex/server'
 import { v } from 'convex/values'
+import { internal } from './_generated/api'
 import { mutation, query } from './_generated/server'
 import {
 	requireAdminReader,
@@ -52,6 +53,13 @@ export const getOrCreate = mutation({
 				profileImageUrl: identity.pictureUrl ?? undefined,
 			}),
 		})
+
+		if (identity.email) {
+			await ctx.scheduler.runAfter(0, internal.newsletter.syncContact, {
+				email: identity.email,
+				name: identity.name ?? undefined,
+			})
+		}
 
 		return await ctx.db.get(id)
 	},
