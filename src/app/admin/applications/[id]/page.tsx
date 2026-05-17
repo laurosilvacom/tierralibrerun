@@ -362,7 +362,10 @@ export default function ApplicationDetailPage({
 
 					<AdminSectionCard title="Submitted">
 						<p className="text-muted-foreground text-sm">
-							{format(new Date(app._creationTime), 'MMMM d, yyyy · h:mm a')}
+							{format(
+								new Date(app.submittedAt ?? app._creationTime),
+								'MMMM d, yyyy · h:mm a',
+							)}
 						</p>
 						{app.reviewedAt && (
 							<p className="text-muted-foreground text-sm">

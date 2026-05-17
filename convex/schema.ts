@@ -62,6 +62,12 @@ export default defineSchema({
 		reviewedAt: v.optional(v.number()),
 		reviewedByClerkId: v.optional(v.string()),
 		updatedAt: v.number(),
+		// Real submission time. Distinct from Convex `_creationTime`, which for
+		// migrated records reflects the May 2026 PlanetScale → Convex migration
+		// rather than the original PlanetScale `created_at`. New submissions set
+		// this to `Date.now()`. Migrated records are backfilled by
+		// `migrations.backfillSubmittedAt`.
+		submittedAt: v.optional(v.number()),
 	})
 		.index('by_userId', ['userId'])
 		.index('by_status', ['status'])

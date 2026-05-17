@@ -201,21 +201,29 @@ export const submit = mutation({
 
 		if (!user) throw new Error('Failed to resolve user record')
 
-		// Enforce 1 application per 6 months (unless admin-exempt)
+		// Enforce 1 application per 6 months (unless admin-exempt).
+		// Uses `submittedAt` when present (correct for migrated records too) and
+		// falls back to `_creationTime` for any records not yet backfilled.
 		if (!user.fundApplicationLimitExempt) {
 			const sixMonthsAgo = Date.now() - 6 * 30 * 24 * 60 * 60 * 1000
-			const recent = await ctx.db
+			const userApps = await ctx.db
 				.query('fundApplications')
 				.withIndex('by_userId', (q) => q.eq('userId', user!._id))
-				.filter((q) => q.gte(q.field('_creationTime'), sixMonthsAgo))
 				.collect()
 
+			const recent = userApps.filter(
+				(app) => (app.submittedAt ?? app._creationTime) >= sixMonthsAgo,
+			)
+
 			if (recent.length >= 1) {
-				const oldest = recent.sort(
-					(a, b) => a._creationTime - b._creationTime,
+				const mostRecent = recent.sort(
+					(a, b) =>
+						(b.submittedAt ?? b._creationTime) -
+						(a.submittedAt ?? a._creationTime),
 				)[0]!
 				const nextEligible = new Date(
-					oldest._creationTime + 6 * 30 * 24 * 60 * 60 * 1000,
+					(mostRecent.submittedAt ?? mostRecent._creationTime) +
+						6 * 30 * 24 * 60 * 60 * 1000,
 				)
 				throw new Error(
 					`You can apply again after ${nextEligible.toLocaleDateString()}`,
@@ -223,6 +231,7 @@ export const submit = mutation({
 			}
 		}
 
+		const now = Date.now()
 		return await ctx.db.insert('fundApplications', {
 			userId: user._id,
 			name: user.name ?? identity.name ?? '',
@@ -239,7 +248,8 @@ export const submit = mutation({
 			communityContribution: args.communityContribution,
 			wantsMentor: args.wantsMentor,
 			status: 'PENDING',
-			updatedAt: Date.now(),
+			submittedAt: now,
+			updatedAt: now,
 			...definedFields({
 				raceDate: args.raceDate,
 				raceLocation: args.raceLocation,

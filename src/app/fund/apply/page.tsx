@@ -24,20 +24,26 @@ export default async function ApplyPage() {
 	const { getToken } = await auth()
 	const token = await getToken({ template: 'convex' })
 
-	const [raceOptions, myApplications] = await Promise.all([
+	const [raceOptions, myApplications, currentUserRecord] = await Promise.all([
 		getAllRaceOptionsForApplication(),
 		token
 			? fetchQuery(api.applications.listMine, {}, { token })
 			: Promise.resolve([]),
+		token
+			? fetchQuery(api.users.getCurrent, {}, { token })
+			: Promise.resolve(null),
 	])
 
+	const isLimitExempt = currentUserRecord?.fundApplicationLimitExempt ?? false
 	const SIX_MONTHS_MS = 6 * 30 * 24 * 60 * 60 * 1000
 	const sixMonthsAgo = Date.now() - SIX_MONTHS_MS
 	const recentApps = myApplications.filter(
-		(app) => app._creationTime >= sixMonthsAgo,
+		(app) => (app.submittedAt ?? app._creationTime) >= sixMonthsAgo,
 	)
-	const appliedRaces = recentApps.map((app) => app.race)
-	const remainingApplications = Math.max(0, 1 - recentApps.length)
+	const appliedRaces = isLimitExempt ? [] : recentApps.map((app) => app.race)
+	const remainingApplications = isLimitExempt
+		? 1
+		: Math.max(0, 1 - recentApps.length)
 
 	return (
 		<ApplicationForm

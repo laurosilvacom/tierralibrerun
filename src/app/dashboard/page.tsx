@@ -243,6 +243,7 @@ export default function DashboardPage() {
 									status: string
 									race: string
 									_creationTime: number
+									submittedAt?: number
 									raceDate?: number
 								}) => {
 									const config =
@@ -291,7 +292,7 @@ export default function DashboardPage() {
 																<span>
 																	Applied{' '}
 																	{format(
-																		new Date(app._creationTime),
+																		new Date(app.submittedAt ?? app._creationTime),
 																		'MMM d, yyyy',
 																	)}
 																</span>

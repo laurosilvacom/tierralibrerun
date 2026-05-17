@@ -281,9 +281,10 @@ export default function ApplicationsPage() {
 													</span>
 													<span aria-hidden>·</span>
 													<span>
-														{formatDistanceToNow(new Date(app._creationTime), {
-															addSuffix: true,
-														})}
+														{formatDistanceToNow(
+															new Date(app.submittedAt ?? app._creationTime),
+															{ addSuffix: true },
+														)}
 													</span>
 												</div>
 											</div>

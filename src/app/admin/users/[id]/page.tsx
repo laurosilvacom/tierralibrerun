@@ -13,8 +13,8 @@ import {
 import { DeleteUser } from '@/components/admin/delete-user'
 import { LimitExemptToggle } from '@/components/admin/limit-exempt'
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Separator } from '@/components/ui/separator'
 import { api } from '@/convex/_generated/api'
 import { type Id } from '@/convex/_generated/dataModel'
 import { cn } from '@/lib/utils'
@@ -205,11 +205,6 @@ export default function AdminUserDetailPage({
 								<Mail className="text-muted-foreground h-4 w-4 shrink-0" />
 								<span className="break-words">{user.email}</span>
 							</div>
-							{user.fundApplicationLimitExempt && (
-								<Badge variant="outline" className="text-xs font-normal">
-									Limit exempt
-								</Badge>
-							)}
 							<p className="text-muted-foreground pt-1 text-xs">
 								Joined {format(new Date(user._creationTime), 'MMMM d, yyyy')}
 							</p>
@@ -217,13 +212,18 @@ export default function AdminUserDetailPage({
 					</AdminSectionCard>
 
 					<AdminSectionCard title="Admin controls">
-						<div className="space-y-5">
-							<LimitExemptToggle
-								userId={user._id}
-								currentValue={user.fundApplicationLimitExempt}
-							/>
-							<DeleteUser userId={user._id} />
-						</div>
+						<LimitExemptToggle
+							userId={user._id}
+							currentValue={user.fundApplicationLimitExempt}
+							lastApplicationAt={
+								userApps?.reduce<number | null>((latest, app) => {
+									const t = app.submittedAt ?? app._creationTime
+									return latest === null || t > latest ? t : latest
+								}, null) ?? null
+							}
+						/>
+						<Separator />
+						<DeleteUser userId={user._id} />
 					</AdminSectionCard>
 				</div>
 			</div>
